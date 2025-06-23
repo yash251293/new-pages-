@@ -1,0 +1,50 @@
+# Node.js dependencies
+node_modules/
+
+# Next.js build output (for Final UI/)
+Final UI/.next/
+Final UI/out/
+
+# Environment variables (ALWAYS ignore these in Git)
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Editor/IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# npm package manager cache
+.npm/
+.eslintcache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Backend specific ignores (assuming backend/ is a sub-folder)
+backend/dist/
+backend/build/
+backend/uploads/ # Exclude uploaded files (e.g., resumes)
+backend/node_modules/ # If backend has its own node_modules
+
+# Explicitly exclude folders as clarified by user
+# (Even if not currently present, prevents accidental tracking if they appear)
+++Final UI/
+test-final-ui/
+
+# Accidental command file, to prevent it from ever being tracked
+udo -u postgres psql
