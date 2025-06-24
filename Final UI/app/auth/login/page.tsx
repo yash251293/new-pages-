@@ -127,15 +127,15 @@ export default function LoginPage() {
     console.log("handleGoogleSignInClick called");
     setIsGoogleLoading(true);
     try {
-      // console.log("Attempting signInWithPopup...");
-      // const userCredential = await signInWithPopup(firebaseAuth, googleProvider);
-      // console.log("signInWithPopup successful, userCredential:", userCredential);
-      // const idToken = await userCredential.user.getIdToken();
-      // console.log("idToken obtained:", idToken ? "Yes" : "No");
+      console.log("Attempting signInWithPopup...");
+      const userCredential = await signInWithPopup(firebaseAuth, googleProvider);
+      console.log("signInWithPopup successful, userCredential:", userCredential);
+      const idToken = await userCredential.user.getIdToken();
+      console.log("idToken obtained:", idToken ? "Yes" : "No");
 
-      // const backendResponse = await loginWithGoogleAPI(idToken);
+      // const backendResponse = await loginWithGoogleAPI(idToken); // Keep commented for now
 
-      // if (backendResponse.token && backendResponse.user) {
+      // if (backendResponse.token && backendResponse.user) { // Keep commented for now
       //   toast.success("Google Sign-In successful! Redirecting...");
       //   auth.login(backendResponse.token, backendResponse.user);
       //   router.push('/feed');
