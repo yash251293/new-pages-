@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');    // Requires npm install
 const jwt = require('jsonwebtoken'); // Requires npm install
 const db = require('../db');         // Assumes db/index.js and pg (requires npm install)
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware'); // Added authMiddleware import
+const authMiddleware = require('../middleware/authMiddleware');
+const { firebaseAdminAuth } = require('../config/firebaseAdmin');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -195,3 +196,104 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+// POST /api/auth/google-signin
+router.post('/google-signin', async (req, res, next) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ message: 'ID token is required.' });
+  }
+
+  if (!firebaseAdminAuth) {
+    console.error('Firebase Admin SDK is not initialized. Cannot perform Google Sign-In.');
+    return res.status(500).json({ message: 'Google Sign-In is not configured on the server.' });
+  }
+
+  try {
+    const decodedToken = await firebaseAdminAuth.verifyIdToken(idToken);
+    const { uid: google_id, email, name, picture } = decodedToken;
+
+    let user;
+    let existingUser;
+
+    // Check if user exists by google_id
+    const googleUserResult = await db.query('SELECT * FROM users WHERE google_id = $1', [google_id]);
+    if (googleUserResult.rows.length > 0) {
+      existingUser = googleUserResult.rows[0];
+    } else if (email) {
+      // If not found by google_id, check by email (for linking accounts or if email is verified by Google)
+      const emailUserResult = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      if (emailUserResult.rows.length > 0) {
+        existingUser = emailUserResult.rows[0];
+        // If user found by email but google_id is not set, link the account
+        if (!existingUser.google_id) {
+          await db.query('UPDATE users SET google_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [google_id, existingUser.id]);
+          existingUser.google_id = google_id; // Update in-memory object
+        }
+      }
+    }
+
+    if (existingUser) {
+      user = existingUser;
+      // Optionally update name/picture if changed, though this might overwrite user's preferred name
+      // For simplicity, we'll skip auto-updating name from Google for existing users for now.
+    } else {
+      // New user: Create account
+      // For password_hash, since it's Google Sign-In, we might not need one,
+      // or we can generate a secure random password that won't be used.
+      // Setting it to NULL if your DB schema allows, or a placeholder.
+      // For now, let's assume password_hash can be NULL for social logins or requires a different setup.
+      // The current schema has password_hash as NOT NULL.
+      // A placeholder password or a flag indicating social login would be needed.
+      // For this implementation, we'll create a user with a placeholder unusable password.
+      const placeholderPassword = await bcrypt.hash(`google_${Date.now()}_${Math.random()}`, 10);
+
+      const newUserResult = await db.query(
+        `INSERT INTO users (email, password_hash, full_name, user_type, google_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, email, user_type, full_name, company_name, google_id, created_at, updated_at`,
+        [email, placeholderPassword, name || 'User', 'individual', google_id] // Default to 'individual', name from token
+      );
+      user = newUserResult.rows[0];
+
+      // Optionally create a basic user_profiles entry here if needed
+      // await db.query('INSERT INTO user_profiles (user_id, bio) VALUES ($1, $2)', [user.id, 'Signed up with Google.']);
+    }
+
+    // Generate application JWT
+    const appTokenPayload = {
+      userId: user.id,
+      userType: user.user_type,
+      email: user.email,
+    };
+    const appToken = jwt.sign(
+      appTokenPayload,
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+    );
+
+    res.json({
+      message: 'Google Sign-In successful!',
+      token: appToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        user_type: user.user_type,
+        full_name: user.full_name,
+        company_name: user.company_name,
+        // Potentially add google_id or other relevant fields from your 'users' table
+      },
+    });
+
+  } catch (error) {
+    console.error('Error during Google Sign-In:', error);
+    if (error.code === 'auth/id-token-expired' || error.code === 'auth/id-token-revoked' || error.code === 'auth/invalid-id-token') {
+      return res.status(401).json({ message: 'Invalid or expired Google ID token.' });
+    }
+    // Pass to global error handler for other errors
+    const err = new Error('Server error during Google Sign-In.');
+    err.statusCode = 500;
+    next(err);
+  }
+});

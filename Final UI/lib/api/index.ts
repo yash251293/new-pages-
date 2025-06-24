@@ -158,3 +158,12 @@ export const markUserAsVerified = async (token: string) => {
     // No body needed for this specific request if backend uses token for user ID
   });
 };
+
+// Function to log in/register a user with Google ID token via backend
+export const loginWithGoogleAPI = async (idToken: string) => {
+  // Assuming the backend expects { idToken: "..." } in the body
+  return request<any>('/auth/google-signin', { // TODO: Define response type, similar to LoginResponse
+    method: 'POST',
+    body: { idToken }, // Pass object directly, request function will stringify
+  });
+};
