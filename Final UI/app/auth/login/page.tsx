@@ -133,25 +133,25 @@ export default function LoginPage() {
       const idToken = await userCredential.user.getIdToken();
       console.log("idToken obtained:", idToken ? "Yes" : "No");
 
-      // const backendResponse = await loginWithGoogleAPI(idToken); // Keep commented for now
+      const backendResponse = await loginWithGoogleAPI(idToken);
 
-      // if (backendResponse.token && backendResponse.user) { // Keep commented for now
-      //   toast.success("Google Sign-In successful! Redirecting...");
-      //   auth.login(backendResponse.token, backendResponse.user);
-      //   router.push('/feed');
-      // } else {
-      //   throw new Error(backendResponse.message || "Google Sign-In failed on backend.");
-      // }
+      if (backendResponse.token && backendResponse.user) {
+        toast.success("Google Sign-In successful! Redirecting...");
+        auth.login(backendResponse.token, backendResponse.user);
+        router.push('/feed');
+      } else {
+        throw new Error(backendResponse.message || "Google Sign-In failed on backend.");
+      }
     } catch (error: any) {
-      // console.error("Google Sign-In failed:", error);
-      // if (error.code === 'auth/popup-closed-by-user') {
-      //   toast.info("Google Sign-In cancelled.");
-      // } else if (error.code === 'auth/account-exists-with-different-credential') {
-      //   toast.error("An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address.");
-      // }
-      // else {
-      //   toast.error(error.data?.message || error.message || "An unexpected error occurred during Google Sign-In.");
-      // }
+      console.error("Google Sign-In failed:", error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.info("Google Sign-In cancelled.");
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        toast.error("An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address.");
+      }
+      else {
+        toast.error(error.data?.message || error.message || "An unexpected error occurred during Google Sign-In.");
+      }
     } finally {
       setIsGoogleLoading(false);
     }
