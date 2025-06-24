@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 218 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 218 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 218 25% 15%;
+    --primary: 218 25% 15%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 218 25% 15%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 250 95% 63%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 250 95% 63%;
+    --radius: 0.5rem;
+    
+    /* Custom color variables */
+    --primary-navy: 218 25% 15%;
+    --accent-navy-light: 218 25% 25%;
+    --neutral-light: 220 14% 96%;
+    --text-navy: 218 25% 15%;
+  }
+
+  .dark {
+    --background: 218 25% 15%;
+    --foreground: 210 40% 98%;
+    --card: 218 25% 15%;
+    --card-foreground: 210 40% 98%;
+    --popover: 218 25% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 250 95% 63%;
+    --primary-foreground: 218 25% 15%;
+    --secondary: 218 25% 25%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 218 25% 25%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 250 95% 63%;
+    --accent-foreground: 218 25% 15%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 218 25% 25%;
+    --input: 218 25% 25%;
+    --ring: 250 95% 63%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  .font-logo {
+    font-family: var(--font-lora);
+  }
+  
+  .font-heading {
+    font-family: var(--font-abhaya-libre);
+    font-weight: 800;
+  }
+  
+  .font-subheading {
+    font-family: var(--font-abhaya-libre);
+    font-weight: 500;
+  }
+
+  /* Custom utility classes */
+  .bg-primary-navy {
+    background-color: hsl(var(--primary-navy));
+  }
+  
+  .text-primary-navy {
+    color: hsl(var(--primary-navy));
+  }
+}
