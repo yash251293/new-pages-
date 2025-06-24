@@ -35,10 +35,12 @@ import {
   PlusCircle
 } from "lucide-react"
 import Link from "next/link"
+import { Suspense } from "react" // Added Suspense import
 
-export default function HireFreelancerPage() {
+// Renamed original component to HireFreelancerContent
+function HireFreelancerContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const searchParams = useSearchParams() // useSearchParams is now safely inside a component rendered within Suspense
   const projectId = searchParams.get('project')
   const applicantId = searchParams.get('applicant')
   
@@ -763,4 +765,15 @@ export default function HireFreelancerPage() {
       )}
     </>
   )
-} 
+}
+
+// New wrapper component for the default export
+export default function HireFreelancerPage() {
+  return (
+    // It's good practice to have a more specific or styled loading state if possible,
+    // but a simple div is fine for Suspense fallback.
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading hire page...</div>}>
+      <HireFreelancerContent />
+    </Suspense>
+  );
+}
