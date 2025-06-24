@@ -280,7 +280,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Manual Remember Me Checkbox */}
-                {/* {isClient && (
+                {isClient && (
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember-me-manual"
@@ -306,7 +306,7 @@ export default function LoginPage() {
                       Remember me
                     </Label>
                   </div>
-                )} */}
+                )}
 
                 <Button
                   type="submit"
