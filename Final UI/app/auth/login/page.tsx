@@ -14,7 +14,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/comp
 import dynamic from "next/dynamic";
 
 import { useRouter } from "next/navigation";
-import { useForm, SubmitHandler, Controller } from "react-hook-form"; // Ensure Controller is imported
+import { useForm, SubmitHandler } from "react-hook-form"; // Controller removed
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { loginUser } from "@/lib/api"; // Import the API function
@@ -63,7 +63,7 @@ export default function LoginPage() {
       // rememberMe: false, // Removed
     }
   });
-  // control is likely the issue, remove it from destructuring if not used by Controller
+  // control removed from destructuring
   const { register, handleSubmit, formState: { errors }, setValue, watch } = formMethods;
 
 
@@ -173,6 +173,7 @@ export default function LoginPage() {
     }
   };
 
+  console.log("LoginPage component rendering main JSX"); // Debug line
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
       <div className="flex w-full max-w-6xl mx-auto rounded-2xl shadow-xl overflow-hidden border">
