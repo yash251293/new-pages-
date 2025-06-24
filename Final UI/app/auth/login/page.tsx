@@ -414,8 +414,8 @@ export default function LoginPage() {
           <div className="flex gap-8 mb-6 justify-center">
              <button
                 type="button"
-                // onClick={handleGoogleSignInClick}
-                // disabled={isGoogleLoading}
+                onClick={handleGoogleSignInClick}
+                disabled={isGoogleLoading}
                 className="hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Sign in with Google"
               >
