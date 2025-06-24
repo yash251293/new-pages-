@@ -11,9 +11,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { EyeIcon, EyeOffIcon, Phone, Mail } from "lucide-react"
 import { useState, useEffect } from "react"
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp"
+import dynamic from "next/dynamic";
 
 import { useRouter } from "next/navigation";
-import { useForm, SubmitHandler, Controller } from "react-hook-form";
+import { useForm, SubmitHandler, Controller } from "react-hook-form"; // Ensure Controller is imported
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { loginUser } from "@/lib/api"; // Import the API function
@@ -24,12 +25,15 @@ import { toast } from "sonner"; // Import toast
 const emailFormSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password is required." }),
-  rememberMe: z.boolean().optional(),
+  // rememberMe: z.boolean().optional(), // Removed for now
 });
 
 type EmailLoginFormValues = z.infer<typeof emailFormSchema>;
 
+// import RememberMeCheckbox from "@/components/auth/RememberMeCheckbox"; // Removed
+
 export default function LoginPage() {
+  const [isClient, setIsClient] = useState(false); // For conditional rendering
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
 
@@ -45,43 +49,40 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<EmailLoginFormValues>({
+  // Get all methods from useForm, then access control via methods.control
+  const formMethods = useForm<EmailLoginFormValues>({
     resolver: zodResolver(emailFormSchema),
     defaultValues: {
       email: "",
       password: "",
-      rememberMe: false,
+      // rememberMe: false, // Removed
     }
   });
+  // control is likely the issue, remove it from destructuring if not used by Controller
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = formMethods;
 
-  const rememberMeValue = watch("rememberMe");
 
-  // Load remembered credentials on component mount
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    const rememberedPassword = localStorage.getItem('rememberedPassword');
-    const wasRemembered = localStorage.getItem('rememberMe') === 'true';
+    setIsClient(true); // Set to true after component mounts (client-side)
+  }, []);
 
-    if (wasRemembered && rememberedEmail) {
-      setValue("email", rememberedEmail);
-      setValue("password", rememberedPassword || "");
-      setValue("rememberMe", true);
+  // Load remembered email on component mount
+  useEffect(() => {
+    if (isClient) { // Only run localStorage access on the client
+      const rememberedEmail = localStorage.getItem('rememberedEmail');
+      if (rememberedEmail) {
+        setValue("email", rememberedEmail);
+      }
     }
-  }, [setValue]);
+  }, [isClient, setValue]);
 
   // Handle form submission for email login
-  const handleEmailLogin: SubmitHandler<EmailLoginFormValues> = async (data) => {
+  const onEmailSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
     setIsLoadingEmail(true);
     try {
-      if (data.rememberMe) {
-        localStorage.setItem('rememberedEmail', data.email);
-        localStorage.setItem('rememberedPassword', data.password);
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('rememberedEmail');
-        localStorage.removeItem('rememberedPassword');
-        localStorage.removeItem('rememberMe');
-      }
+      // Simplified: if email is remembered, it's pre-filled. No other rememberMe logic for now.
+      // If functionality to explicitly save email on login is desired, it can be added here.
+      // For now, only pre-fill from localStorage is handled.
 
       const response = await loginUser({ email: data.email, password: data.password });
       if (response.token && response.user) {
@@ -165,9 +166,6 @@ export default function LoginPage() {
               type="button"
               onClick={() => {
                 setLoginMethod('phone');
-                // Reset react-hook-form errors for email form if switching
-                // errors.email = undefined; errors.password = undefined; // This is not how you clear RHF errors
-                // Better to let them be, or reset the form if needed, but not critical for UI-only phone part
               }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
                 loginMethod === 'phone'
@@ -180,14 +178,14 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <form className="space-y-6" onSubmit={loginMethod === 'email' ? handleSubmit(handleEmailLogin) : (e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={loginMethod === 'email' ? handleSubmit(onEmailSubmit) : (e) => e.preventDefault()}>
             {loginMethod === 'email' ? (
               // Email Login Form
               <>
                 <div>
                   <Label htmlFor="email-input" className="text-base font-semibold text-brand-text-medium">Email</Label>
                   <Input
-                    id="email-input" // Changed id to avoid conflict if 'email' is used elsewhere
+                    id="email-input"
                     type="email"
                     placeholder="example@gmail.com"
                     {...register("email")}
@@ -199,7 +197,7 @@ export default function LoginPage() {
                   <Label htmlFor="password-input" className="text-base font-semibold text-brand-text-medium">Password</Label>
                   <div className="relative">
                     <Input
-                      id="password-input" // Changed id
+                      id="password-input"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••••"
                       {...register("password")}
@@ -216,26 +214,7 @@ export default function LoginPage() {
                   {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Controller // Use Controller for Checkbox with RHF
-                    name="rememberMe"
-                    control={control} // control from useForm
-                    render={({ field }) => (
-                      <Checkbox
-                        id="remember-me"
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        className="border-brand-border data-[state=checked]:bg-brand-blue data-[state=checked]:border-brand-blue"
-                      />
-                    )}
-                  />
-                  <Label
-                    htmlFor="remember-me"
-                    className="text-sm font-medium text-brand-text-medium cursor-pointer"
-                  >
-                    Remember me
-                  </Label>
-                </div>
+                {/* RememberMeCheckbox and related logic completely removed for now */}
 
                 <Button
                   type="submit"
