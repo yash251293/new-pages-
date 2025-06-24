@@ -91,37 +91,37 @@ export default function LoginPage() {
   }, [isClient, setValue]);
 
   // Handle form submission for email login
-  // const onEmailSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
-  //   setIsLoadingEmail(true);
-  //   try {
-  //     if (isClient) { // Ensure localStorage is only accessed on the client
-  //       if (rememberMeChecked) {
-  //         localStorage.setItem('rememberedEmail', data.email);
-  //         localStorage.setItem('rememberedPassword', data.password);
-  //         // 'rememberMe' flag is already set by the checkbox's onCheckedChange
-  //       } else {
-  //         // If not checked, ensure these are cleared, in case they were set by a previous checked login
-  //         localStorage.removeItem('rememberedEmail');
-  //         localStorage.removeItem('rememberedPassword');
-  //         localStorage.removeItem('rememberMe'); // Also ensure the flag is cleared
-  //       }
-  //     }
+  const onEmailSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
+    setIsLoadingEmail(true);
+    try {
+      if (isClient) { // Ensure localStorage is only accessed on the client
+        if (rememberMeChecked) {
+          localStorage.setItem('rememberedEmail', data.email);
+          localStorage.setItem('rememberedPassword', data.password);
+          // 'rememberMe' flag is already set by the checkbox's onCheckedChange
+        } else {
+          // If not checked, ensure these are cleared, in case they were set by a previous checked login
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+          localStorage.removeItem('rememberMe'); // Also ensure the flag is cleared
+        }
+      }
 
-  //     const response = await loginUser({ email: data.email, password: data.password });
-  //     if (response.token && response.user) {
-  //       toast.success("Login successful! Redirecting...");
-  //       auth.login(response.token, response.user);
-  //       router.push('/feed'); // Or to a more appropriate page like /dashboard
-  //     } else {
-  //       throw new Error("Login response did not include token or user data.");
-  //     }
-  //   } catch (error: any) {
-  //     console.error("Login failed:", error);
-  //     toast.error(error.data?.message || error.message || "An unexpected error occurred during login.");
-  //   } finally {
-  //     setIsLoadingEmail(false);
-  //   }
-  // };
+      const response = await loginUser({ email: data.email, password: data.password });
+      if (response.token && response.user) {
+        toast.success("Login successful! Redirecting...");
+        auth.login(response.token, response.user);
+        router.push('/feed'); // Or to a more appropriate page like /dashboard
+      } else {
+        throw new Error("Login response did not include token or user data.");
+      }
+    } catch (error: any) {
+      console.error("Login failed:", error);
+      toast.error(error.data?.message || error.message || "An unexpected error occurred during login.");
+    } finally {
+      setIsLoadingEmail(false);
+    }
+  };
 
   // const handleGoogleSignInClick = async () => {
   //   console.log("handleGoogleSignInClick called - TEMPORARILY SIMPLIFIED FOR DEBUGGING");
