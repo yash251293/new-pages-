@@ -191,11 +191,10 @@ export default function LoginPage() {
                     id="email"
                     type="email"
                     placeholder="example@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    {...register("email")}
                     className="mt-2 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-4 px-4 text-lg font-bold"
-                    required
                   />
+                  {emailFormErrors.email && <p className="text-red-500 text-xs mt-1">{emailFormErrors.email.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="password" className="text-base font-semibold text-brand-text-medium">Password</Label>
@@ -204,10 +203,8 @@ export default function LoginPage() {
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      {...register("password")}
                       className="mt-2 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-4 px-4 text-lg font-bold"
-                      required
                     />
                     <button
                       type="button"
