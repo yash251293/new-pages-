@@ -124,12 +124,16 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignInClick = async () => {
+    console.log("handleGoogleSignInClick called"); // Debug log
     setIsGoogleLoading(true);
     try {
+      console.log("Attempting signInWithPopup..."); // Debug log
       const userCredential = await signInWithPopup(firebaseAuth, googleProvider);
+      console.log("signInWithPopup successful, userCredential:", userCredential); // Debug log
       const idToken = await userCredential.user.getIdToken();
+      console.log("idToken obtained:", idToken ? "Yes" : "No"); // Debug log
 
-      const backendResponse = await loginWithGoogleAPI(idToken); // This function needs to be created in lib/api.ts
+      const backendResponse = await loginWithGoogleAPI(idToken);
 
       if (backendResponse.token && backendResponse.user) {
         toast.success("Google Sign-In successful! Redirecting...");
