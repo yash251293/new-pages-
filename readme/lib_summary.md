@@ -59,12 +59,14 @@ This document summarizes the purpose, key functions/classes, and contributions o
     *   Ensures that Tailwind CSS classes are applied correctly and predictably, avoiding conflicts.
     *   Promotes cleaner and more maintainable component code by abstracting class name construction.
 
-## `lib/authUtils.ts`
+## `lib/authUtils.ts` (Conceptual for Next.js Frontend - Actual Logic in Express Backend)
 
-*   **Purpose**:
-    Provides server-side utility functions related to authentication, specifically for verifying JWTs.
+**IMPORTANT NOTE (Oct 2023): The following describes a conceptual `lib/authUtils.ts` file containing a `verifyAuthToken` function, likely intended for server-side operations within the Next.js application (`Final UI/`). However, investigation revealed that this specific file was NOT found in `Final UI/lib/`. The actual, active JWT verification logic for protecting API routes is implemented in the separate Express backend, specifically in `backend/middleware/authMiddleware.js`. That middleware performs token validation for routes defined in `backend/routes/`.**
 
-*   **Key Functions**:
+*   **Original Conceptual Purpose**:
+    To provide server-side utility functions related to authentication within the Next.js part of the project, specifically for verifying JWTs.
+
+*   **Original Conceptual Key Functions**:
     *   `verifyAuthToken(authHeader: string | undefined | null): { userId: string } | null`:
         *   Takes an Authorization header string (e.g., "Bearer <token>").
         *   Checks for the presence and correct format of the header.
@@ -75,10 +77,12 @@ This document summarizes the purpose, key functions/classes, and contributions o
         *   Handles errors like `TokenExpiredError` or `JsonWebTokenError` by logging them and returning `null`.
         *   Returns `null` if the token is invalid, expired, malformed, or if `userId` is not found in the payload.
 
-*   **Contribution to Project**:
-    This file is essential for securing API routes by providing a reusable function to:
+*   **Original Conceptual Contribution to Project**:
+    This file would have been essential for securing Next.js API routes (if they were handling sensitive operations directly) by providing a reusable function to:
     *   Validate authentication tokens sent by clients.
     *   Extract user identity (`userId`) from valid tokens.
-    *   Centralize token verification logic, ensuring consistency across protected API endpoints.
+    *   Centralize token verification logic.
     *   Handle common JWT errors gracefully.
-    *   Emphasizes the critical dependency on the `JWT_SECRET` environment variable for secure operation.
+    *   Emphasize the critical dependency on the `JWT_SECRET` environment variable.
+
+    **(Reminder: This functionality is currently handled by `backend/middleware/authMiddleware.js` for the Express backend APIs.)**

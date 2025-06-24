@@ -50,18 +50,20 @@ This document provides a detailed analysis of the API routes found in `app/api/`
 
 ---
 
-## `app/api/profile/route.ts` (`GET /api/profile`, `POST /api/profile`)
+## `app/api/profile/route.ts` (`GET /api/profile`, `POST /api/profile`) - (Outdated Description)
 
-*   **Purpose**: `GET` fetches profile; `POST` updates/creates profile.
-*   **Authentication**: Uses `verifyAuthToken` (JWT).
-*   **`GET /api/profile`**:
+**IMPORTANT NOTE (Oct 2023): The following description refers to a conceptual Next.js API route. Investigation has shown that the actual, active user profile API is handled by the separate Express backend (see `backend/routes/userRoutes.js`). The Express backend uses endpoints like `GET /api/users/me` and `PUT /api/users/profile` and employs proper JWT authentication via `backend/middleware/authMiddleware.js`. The Next.js frontend (`Final UI/`) calls these Express backend routes (e.g., via functions in `Final UI/lib/api/index.ts`). The `app/api/profile/route.ts` file and a distinct `verifyAuthToken` utility in `Final UI/lib/` were not found in the current `Final UI` codebase.**
+
+*   **Original Conceptual Purpose**: `GET` fetches profile; `POST` updates/creates profile.
+*   **Original Conceptual Authentication**: Was intended to use `verifyAuthToken` (JWT). (Note: Another document, `profile_auth_flaw_summary.md`, described a period where this conceptual route had mock, insecure authentication).
+*   **Original Conceptual `GET /api/profile`**:
     *   **Database**: Fetches from `users`, `profiles`, `user_skills`, `skills`, `user_experience`, `user_education`. Consolidates data.
     *   **Response**: Success (200) with profile object; Error (401/403, 404, 500).
-*   **`POST /api/profile`**:
+*   **Original Conceptual `POST /api/profile`**:
     *   **Request Body**: JSON with profile fields, skills, experience, education arrays.
     *   **Database**: Uses transaction. UPSERT to `profiles`. Deletes and inserts related skills, experience, education.
     *   **Response**: Success (200); Error (401/403, 400, 500).
-*   **Improvements**: Zod validation for POST, consider PATCH for partial updates.
+*   **Original Conceptual Improvements**: Zod validation for POST, consider PATCH for partial updates.
 
 ---
 
