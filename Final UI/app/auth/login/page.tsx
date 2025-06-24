@@ -206,10 +206,10 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                // setLoginMethod('email');
-                // setShowOTP(false);
-                // setIsOTPSent(false);
-                // setOtpValue("");
+                setLoginMethod('email');
+                setShowOTP(false);
+                setIsOTPSent(false);
+                setOtpValue("");
               }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
                 loginMethod === 'email'
@@ -223,7 +223,12 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                // setLoginMethod('phone');
+                setLoginMethod('phone');
+                // Resetting OTP states when switching to phone, though they are also reset when switching to email.
+                // This ensures a clean state if user toggles back and forth.
+                setShowOTP(false);
+                setIsOTPSent(false);
+                setOtpValue("");
               }}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md font-medium transition-colors ${
                 loginMethod === 'phone'
@@ -237,7 +242,7 @@ export default function LoginPage() {
           </div>
 
           <form className="space-y-6"
-          // onSubmit={loginMethod === 'email' ? handleSubmit(onEmailSubmit) : (e) => e.preventDefault()}
+          onSubmit={loginMethod === 'email' ? handleSubmit(onEmailSubmit) : (e) => e.preventDefault()}
           >
             {loginMethod === 'email' ? (
               // Email Login Form
@@ -248,10 +253,10 @@ export default function LoginPage() {
                     id="email-input"
                     type="email"
                     placeholder="example@gmail.com"
-                    // {...register("email")}
+                    {...register("email")}
                     className="mt-2 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-4 px-4 text-lg font-bold"
                   />
-                  {/* {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>} */}
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="password-input" className="text-base font-semibold text-brand-text-medium">Password</Label>
@@ -260,18 +265,18 @@ export default function LoginPage() {
                       id="password-input"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="••••••••••"
-                      // {...register("password")}
+                      {...register("password")}
                       className="mt-2 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-4 px-4 text-lg font-bold"
                     />
                     <button
                       type="button"
-                      // onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPassword(!showPassword)}
                       className="absolute inset-y-0 right-0 px-4 flex items-center text-brand-text-medium hover:text-brand-blue"
                     >
                       {showPassword ? <EyeOffIcon className="h-6 w-6" /> : <EyeIcon className="h-6 w-6" />}
                     </button>
                   </div>
-                  {/* {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>} */}
+                  {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
                 </div>
 
                 {/* Manual Remember Me Checkbox */}
@@ -305,11 +310,10 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  // disabled={isLoadingEmail}
+                  disabled={isLoadingEmail}
                   className="w-full bg-black hover:bg-brand-text-dark text-white py-4 font-bold text-lg rounded-lg mt-2 shadow-md"
                 >
-                  {/* {isLoadingEmail ? "Signing In..." : "Sign In"} */}
-                  Sign In
+                  {isLoadingEmail ? "Signing In..." : "Sign In"}
                 </Button>
               </>
             ) : (
