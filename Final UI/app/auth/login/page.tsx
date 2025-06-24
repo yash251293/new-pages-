@@ -31,7 +31,7 @@ const emailFormSchema = z.object({
 type EmailLoginFormValues = z.infer<typeof emailFormSchema>; // This type will now just be { email, password }
 
 // import RememberMeCheckbox from "@/components/auth/RememberMeCheckbox"; // Removed
-import { auth as firebaseAuth, googleProvider } from "@/lib/firebase"; // Firebase auth and provider
+import firebaseServices from "@/lib/firebase"; // Use default import
 import { signInWithPopup } from "firebase/auth"; // Firebase signInWithPopup
 import { loginWithGoogleAPI } from "@/lib/api"; // API function to call backend
 
@@ -128,7 +128,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
     try {
       console.log("Attempting signInWithPopup...");
-      const userCredential = await signInWithPopup(firebaseAuth, googleProvider);
+      const userCredential = await signInWithPopup(firebaseServices.auth, firebaseServices.googleProvider);
       console.log("signInWithPopup successful, userCredential:", userCredential);
       const idToken = await userCredential.user.getIdToken();
       console.log("idToken obtained:", idToken ? "Yes" : "No");

@@ -17,6 +17,14 @@ const firebaseConfig = {
 // Check if Firebase has already been initialized to prevent errors
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider(); // Create an instance of the provider
+const googleProvider = new GoogleAuthProvider();
 
-export { app, auth, googleProvider }; // Export the provider instance
+const firebaseServices = {
+  app,
+  auth,
+  googleProvider,
+};
+
+export default firebaseServices;
+// Also keeping named exports for compatibility if other files use them
+export { app, auth, googleProvider };
