@@ -67,28 +67,28 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = formMethods;
 
 
-  // useEffect(() => {
-  //   setIsClient(true); // Set to true after component mounts (client-side)
-  // }, []);
+  useEffect(() => {
+    setIsClient(true); // Set to true after component mounts (client-side)
+  }, []);
 
-  // // Load remembered email on component mount
-  // useEffect(() => {
-  //   if (isClient) { // Only run localStorage access on the client
-  //     const wasRemembered = localStorage.getItem('rememberMe') === 'true';
-  //     setRememberMeChecked(wasRemembered);
+  // Load remembered email on component mount
+  useEffect(() => {
+    if (isClient) { // Only run localStorage access on the client
+      const wasRemembered = localStorage.getItem('rememberMe') === 'true';
+      setRememberMeChecked(wasRemembered);
 
-  //     if (wasRemembered) {
-  //       const rememberedEmail = localStorage.getItem('rememberedEmail');
-  //       const rememberedPassword = localStorage.getItem('rememberedPassword');
-  //       if (rememberedEmail) {
-  //         setValue("email", rememberedEmail);
-  //       }
-  //       if (rememberedPassword) {
-  //         setValue("password", rememberedPassword);
-  //       }
-  //     }
-  //   }
-  // }, [isClient, setValue]);
+      if (wasRemembered) {
+        const rememberedEmail = localStorage.getItem('rememberedEmail');
+        const rememberedPassword = localStorage.getItem('rememberedPassword');
+        if (rememberedEmail) {
+          setValue("email", rememberedEmail);
+        }
+        if (rememberedPassword) {
+          setValue("password", rememberedPassword);
+        }
+      }
+    }
+  }, [isClient, setValue]);
 
   // Handle form submission for email login
   // const onEmailSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
