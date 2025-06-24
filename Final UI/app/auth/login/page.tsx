@@ -166,11 +166,11 @@ export default function LoginPage() {
     }
   };
 
-  // const handleVerifyOTP = () => {
-  //   if (otpValue.length === 6) {
-  //     console.log("Verifying OTP:", otpValue, "for phone:", phoneNumber);
-  //   }
-  // };
+  const handleVerifyOTP = () => {
+    if (otpValue.length === 6) {
+      console.log("Verifying OTP:", otpValue, "for phone:", phoneNumber);
+    }
+  };
 
   console.log("LoginPage component rendering main JSX"); // Debug line
   return (
