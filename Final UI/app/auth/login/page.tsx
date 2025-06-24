@@ -158,13 +158,13 @@ export default function LoginPage() {
   };
 
   // Placeholder functions for phone login (UI only)
-  // const handleSendOTP = () => {
-  //   if (phoneNumber.length >= 10) {
-  //     setIsOTPSent(true);
-  //     setShowOTP(true);
-  //     console.log("Sending OTP to:", phoneNumber);
-  //   }
-  // };
+  const handleSendOTP = () => {
+    if (phoneNumber.length >= 10) {
+      setIsOTPSent(true);
+      setShowOTP(true);
+      console.log("Sending OTP to:", phoneNumber);
+    }
+  };
 
   // const handleVerifyOTP = () => {
   //   if (otpValue.length === 6) {
