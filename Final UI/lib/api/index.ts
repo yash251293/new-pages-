@@ -167,3 +167,18 @@ export const loginWithGoogleAPI = async (idToken: string) => {
     body: { idToken }, // Pass object directly, request function will stringify
   });
 };
+
+// Consolidate all API functions into an object for default export
+const api = {
+  registerUser,
+  loginUser,
+  getCurrentUser,
+  updateUserProfile,
+  updateUserPreferences,
+  updateUserCulture,
+  uploadUserResume,
+  markUserAsVerified,
+  loginWithGoogleAPI,
+};
+
+export default api;

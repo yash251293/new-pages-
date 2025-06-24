@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form"; // Controller removed
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { loginUser } from "@/lib/api"; // Import the API function
+import api from "@/lib/api"; // Use default import
 import { useAuth } from "@/context/AuthContext"; // Import useAuth hook
 import { toast } from "sonner"; // Import toast
 
@@ -33,7 +33,7 @@ type EmailLoginFormValues = z.infer<typeof emailFormSchema>; // This type will n
 // import RememberMeCheckbox from "@/components/auth/RememberMeCheckbox"; // Removed
 import firebaseServices from "@/lib/firebase"; // Use default import
 import { signInWithPopup } from "firebase/auth"; // Firebase signInWithPopup
-import { loginWithGoogleAPI } from "@/lib/api"; // API function to call backend
+// loginWithGoogleAPI will now be api.loginWithGoogleAPI due to default import
 
 export default function LoginPage() {
   const [isClient, setIsClient] = useState(false); // For conditional rendering
@@ -107,7 +107,7 @@ export default function LoginPage() {
         }
       }
 
-      const response = await loginUser({ email: data.email, password: data.password });
+      const response = await api.loginUser({ email: data.email, password: data.password });
       if (response.token && response.user) {
         toast.success("Login successful! Redirecting...");
         auth.login(response.token, response.user);
@@ -133,7 +133,7 @@ export default function LoginPage() {
       const idToken = await userCredential.user.getIdToken();
       console.log("idToken obtained:", idToken ? "Yes" : "No");
 
-      const backendResponse = await loginWithGoogleAPI(idToken);
+      const backendResponse = await api.loginWithGoogleAPI(idToken);
 
       if (backendResponse.token && backendResponse.user) {
         toast.success("Google Sign-In successful! Redirecting...");
