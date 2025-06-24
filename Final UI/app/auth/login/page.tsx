@@ -25,15 +25,16 @@ import { toast } from "sonner"; // Import toast
 const emailFormSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(1, { message: "Password is required." }),
-  // rememberMe: z.boolean().optional(), // Removed for now
+  // rememberMe is handled by a separate useState, not part of RHF schema for submission
 });
 
-type EmailLoginFormValues = z.infer<typeof emailFormSchema>;
+type EmailLoginFormValues = z.infer<typeof emailFormSchema>; // This type will now just be { email, password }
 
 // import RememberMeCheckbox from "@/components/auth/RememberMeCheckbox"; // Removed
 
 export default function LoginPage() {
   const [isClient, setIsClient] = useState(false); // For conditional rendering
+  const [rememberMeChecked, setRememberMeChecked] = useState(false); // State for manual checkbox
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
 
@@ -69,9 +70,18 @@ export default function LoginPage() {
   // Load remembered email on component mount
   useEffect(() => {
     if (isClient) { // Only run localStorage access on the client
-      const rememberedEmail = localStorage.getItem('rememberedEmail');
-      if (rememberedEmail) {
-        setValue("email", rememberedEmail);
+      const wasRemembered = localStorage.getItem('rememberMe') === 'true';
+      setRememberMeChecked(wasRemembered);
+
+      if (wasRemembered) {
+        const rememberedEmail = localStorage.getItem('rememberedEmail');
+        const rememberedPassword = localStorage.getItem('rememberedPassword');
+        if (rememberedEmail) {
+          setValue("email", rememberedEmail);
+        }
+        if (rememberedPassword) {
+          setValue("password", rememberedPassword);
+        }
       }
     }
   }, [isClient, setValue]);
@@ -80,9 +90,18 @@ export default function LoginPage() {
   const onEmailSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
     setIsLoadingEmail(true);
     try {
-      // Simplified: if email is remembered, it's pre-filled. No other rememberMe logic for now.
-      // If functionality to explicitly save email on login is desired, it can be added here.
-      // For now, only pre-fill from localStorage is handled.
+      if (isClient) { // Ensure localStorage is only accessed on the client
+        if (rememberMeChecked) {
+          localStorage.setItem('rememberedEmail', data.email);
+          localStorage.setItem('rememberedPassword', data.password);
+          // 'rememberMe' flag is already set by the checkbox's onCheckedChange
+        } else {
+          // If not checked, ensure these are cleared, in case they were set by a previous checked login
+          localStorage.removeItem('rememberedEmail');
+          localStorage.removeItem('rememberedPassword');
+          localStorage.removeItem('rememberMe'); // Also ensure the flag is cleared
+        }
+      }
 
       const response = await loginUser({ email: data.email, password: data.password });
       if (response.token && response.user) {
@@ -214,7 +233,34 @@ export default function LoginPage() {
                   {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
                 </div>
 
-                {/* RememberMeCheckbox and related logic completely removed for now */}
+                {/* Manual Remember Me Checkbox */}
+                {isClient && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="remember-me-manual"
+                      checked={rememberMeChecked}
+                      onCheckedChange={(checkedState) => {
+                        const isChecked = checkedState === true; // Resolve checkedState type
+                        setRememberMeChecked(isChecked);
+                        if (isChecked) {
+                          localStorage.setItem('rememberMe', 'true');
+                        } else {
+                          localStorage.removeItem('rememberMe');
+                          // Optionally clear rememberedEmail and rememberedPassword here too if unchecked
+                          // localStorage.removeItem('rememberedEmail');
+                          // localStorage.removeItem('rememberedPassword');
+                        }
+                      }}
+                      className="border-brand-border data-[state=checked]:bg-brand-blue data-[state=checked]:border-brand-blue"
+                    />
+                    <Label
+                      htmlFor="remember-me-manual"
+                      className="text-sm font-medium text-brand-text-medium cursor-pointer"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
