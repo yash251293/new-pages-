@@ -55,16 +55,16 @@ export default function LoginPage() {
   const auth = useAuth();
 
   // Get all methods from useForm, then access control via methods.control
-  // const formMethods = useForm<EmailLoginFormValues>({
-  //   resolver: zodResolver(emailFormSchema),
-  //   defaultValues: {
-  //     email: "",
-  //     password: "",
-  //     // rememberMe: false, // Removed
-  //   }
-  // });
+  const formMethods = useForm<EmailLoginFormValues>({
+    resolver: zodResolver(emailFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      // rememberMe: false, // Removed
+    }
+  });
   // control removed from destructuring
-  // const { register, handleSubmit, formState: { errors }, setValue, watch } = formMethods;
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = formMethods;
 
 
   // useEffect(() => {
