@@ -34,12 +34,13 @@ export default function LoginPage() {
   const [otpValue, setOtpValue] = useState("")
   const [phoneNumber, setPhoneNumber] = useState("")
   const [isOTPSent, setIsOTPSent] = useState(false)
-  const [isLoading, setIsLoading] = useState(false); // Added isLoading state
+  const [isLoading, setIsLoading] = useState(false);
+  // Removed useState for email, password, rememberMe as they are handled by react-hook-form
 
-  const router = useRouter(); // Initialized router
+  const router = useRouter();
   const auth = useAuth(); // Initialized auth context
 
-  const { register, handleSubmit: handleEmailSubmit, formState: { errors: emailFormErrors }, watch, setValue: setEmailFormValue } = useForm<EmailLoginFormValues>({
+  const { register, handleSubmit: handleEmailSubmit, formState: { errors: emailFormErrors }, setValue: setEmailFormValue } = useForm<EmailLoginFormValues>({ // Removed watch from here as rememberMeValue is not used directly in JSX
     resolver: zodResolver(emailFormSchema),
     defaultValues: {
       email: "",
@@ -48,34 +49,32 @@ export default function LoginPage() {
     }
   });
 
-  const rememberMeValue = watch("rememberMe");
+  // const rememberMeValue = watch("rememberMe"); // No longer needed if Checkbox uses register correctly
 
   // Load remembered credentials on component mount
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail')
-    // Password is not pre-filled for security, only email and rememberMe state
+    const rememberedEmailValue = localStorage.getItem('rememberedEmail')
     const wasRemembered = localStorage.getItem('rememberMe') === 'true'
 
-    if (wasRemembered && rememberedEmail) {
-      setEmailFormValue('email', rememberedEmail);
+    if (wasRemembered && rememberedEmailValue) {
+      setEmailFormValue('email', rememberedEmailValue);
       setEmailFormValue('rememberMe', true);
     }
   }, [setEmailFormValue])
 
   // Handle form submission for email
   const onEmailLoginSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
+    // 'data.rememberMe' from react-hook-form is now the source of truth
     if (data.rememberMe) {
       localStorage.setItem('rememberedEmail', data.email)
       localStorage.setItem('rememberMe', 'true')
-      // DO NOT store password in localStorage
       localStorage.removeItem('rememberedPassword');
     } else {
       localStorage.removeItem('rememberedEmail')
-      localStorage.removeItem('rememberedPassword') // Ensure this is cleared
+      localStorage.removeItem('rememberedPassword')
       localStorage.removeItem('rememberMe')
     }
 
-    // API call logic implemented
     setIsLoading(true);
     try {
       const response = await loginUser(data); // data already contains email and password
@@ -220,8 +219,7 @@ export default function LoginPage() {
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="remember-me"
-                    checked={rememberMe}
-                    onCheckedChange={handleRememberMeChange}
+                    {...register("rememberMe")} // Correctly bound to react-hook-form
                     className="border-brand-border data-[state=checked]:bg-brand-blue data-[state=checked]:border-brand-blue"
                   />
                   <Label
