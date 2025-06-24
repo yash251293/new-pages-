@@ -63,7 +63,7 @@ export default function LoginPage() {
   }, [setEmailFormValue])
 
   // Handle form submission for email
-  const onEmailLoginSubmit: SubmitHandler<EmailLoginFormValues> = (data) => {
+  const onEmailLoginSubmit: SubmitHandler<EmailLoginFormValues> = async (data) => {
     if (data.rememberMe) {
       localStorage.setItem('rememberedEmail', data.email)
       localStorage.setItem('rememberMe', 'true')
