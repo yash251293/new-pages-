@@ -15,6 +15,8 @@ export default function AppShell({
   const publicPaths = [
     '/auth/login',
     '/auth/signup',
+    '/privacy-policy',
+    '/terms',
     // Add other public paths like '/auth/forgot-password' if they exist
   ];
   // Treat onboarding paths as public or semi-public depending on exact auth flow
