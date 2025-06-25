@@ -41,6 +41,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false); // Loading state for Google Sign-In
+  const [isLinkedInLoading, setIsLinkedInLoading] = useState(false); // Loading state for LinkedIn Sign-In
 
   // Phone login states (remains UI only for now)
   const [showOTP, setShowOTP] = useState(false);
@@ -120,6 +121,44 @@ export default function LoginPage() {
       toast.error(error.data?.message || error.message || "An unexpected error occurred during login.");
     } finally {
       setIsLoadingEmail(false);
+    }
+  };
+
+  const handleLinkedInSignInClick = async () => {
+    console.log("handleLinkedInSignInClick called");
+    setIsLinkedInLoading(true);
+    try {
+      console.log("Attempting LinkedIn signInWithPopup...");
+      const userCredential = await signInWithPopup(firebaseServices.auth, firebaseServices.linkedInProvider);
+      console.log("LinkedIn signInWithPopup successful, userCredential:", userCredential);
+      const idToken = await userCredential.user.getIdToken();
+      console.log("LinkedIn idToken obtained:", idToken ? "Yes" : "No");
+
+      // Assuming the same backend endpoint can verify any Firebase ID token
+      const backendResponse = await api.loginWithGoogleAPI(idToken);
+
+      if (backendResponse.token && backendResponse.user) {
+        toast.success("LinkedIn Sign-In successful! Redirecting...");
+        auth.login(backendResponse.token, backendResponse.user);
+        router.push('/feed');
+      } else {
+        throw new Error(backendResponse.message || "LinkedIn Sign-In failed on backend.");
+      }
+    } catch (error: any) {
+      console.error("LinkedIn Sign-In failed:", error);
+      // Handle specific Firebase errors if needed
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.info("LinkedIn Sign-In cancelled.");
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        toast.error("An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        toast.info("LinkedIn Sign-In cancelled (multiple popups).");
+      }
+      else {
+        toast.error(error.data?.message || error.message || "An unexpected error occurred during LinkedIn Sign-In.");
+      }
+    } finally {
+      setIsLinkedInLoading(false);
     }
   };
 
@@ -433,10 +472,23 @@ export default function LoginPage() {
               </svg>
             {/* )} */}
             </button>
-            <button className="hover:opacity-70 transition-opacity cursor-pointer" aria-label="Sign in with LinkedIn">
-              <svg className="w-12 h-12" viewBox="0 0 24 24">
-                <path fill="#0077B5" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-              </svg>
+            <button
+              type="button"
+              onClick={handleLinkedInSignInClick}
+              disabled={isLinkedInLoading}
+              className="hover:opacity-70 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Sign in with LinkedIn"
+            >
+              {isLinkedInLoading ? (
+                <svg className="animate-spin h-12 w-12 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-12 h-12" viewBox="0 0 24 24">
+                  <path fill="#0077B5" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              )}
             </button>
           </div>
           <div className="mt-8 text-center">

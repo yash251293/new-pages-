@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth"; // Import GoogleAuthProvider
+import { getAuth, GoogleAuthProvider, LinkedInAuthProvider } from "firebase/auth"; // Import LinkedInAuthProvider
 
 // Your web app's Firebase configuration - REPLACE WITH ACTUAL VALUES
 // These should ideally come from environment variables NEXT_PUBLIC_FIREBASE_*
@@ -18,13 +18,15 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+const linkedInProvider = new LinkedInAuthProvider(); // Create LinkedIn provider instance
 
 const firebaseServices = {
   app,
   auth,
   googleProvider,
+  linkedInProvider, // Add to default export object
 };
 
 export default firebaseServices;
 // Also keeping named exports for compatibility if other files use them
-export { app, auth, googleProvider };
+export { app, auth, googleProvider, linkedInProvider }; // Add to named exports
