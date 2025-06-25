@@ -99,13 +99,11 @@ function SignUpContent() {
 
   const userType = watch("user_type");
 
-  useEffect(() => {
-    // Set initial user_type from URL params, then let RHF control it
-     if (initialUserTypeForm !== userType) {
-        setValue("user_type", initialUserTypeForm, { shouldValidate: true, shouldDirty: true });
-     }
-  }, [initialUserTypeForm, setValue, userType]);
+  // Removed problematic useEffect that was resetting userType
+  // The defaultValues in useForm now correctly initializes user_type
+  // from initialUserTypeForm (derived from URL search params).
 
+  console.log("Current userType from watch:", userType); // Debugging line
 
   const onSubmit: SubmitHandler<SignUpFormValues> = async (data) => {
     setIsLoading(true);
