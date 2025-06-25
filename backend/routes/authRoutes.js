@@ -3,7 +3,8 @@ const bcrypt = require('bcryptjs');    // Requires npm install
 const jwt = require('jsonwebtoken'); // Requires npm install
 const db = require('../db');         // Assumes db/index.js and pg (requires npm install)
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware'); // Added authMiddleware import
+const authMiddleware = require('../middleware/authMiddleware');
+const { firebaseAdminAuth } = require('../config/firebaseAdmin');
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -195,3 +196,112 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
+
+// POST /api/auth/google-signin
+router.post('/google-signin', async (req, res, next) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ message: 'ID token is required.' });
+  }
+
+  if (!firebaseAdminAuth) {
+    console.error('Firebase Admin SDK is not initialized. Cannot perform Google Sign-In.');
+    return res.status(500).json({ message: 'Google Sign-In is not configured on the server.' });
+  }
+
+  try {
+    const decodedToken = await firebaseAdminAuth.verifyIdToken(idToken);
+    const { uid: firebase_uid, email, name, picture } = decodedToken; // Firebase UID is the primary link
+    const signInProvider = decodedToken.firebase.sign_in_provider; // e.g., 'google.com', 'linkedin.com'
+
+    let user;
+    let existingUser;
+    let providerIdColumn;
+    let providerIdValue = firebase_uid; // Use Firebase UID as the provider-specific ID
+
+    if (signInProvider === 'google.com') {
+      providerIdColumn = 'google_id';
+    } else if (signInProvider === 'linkedin.com') {
+      providerIdColumn = 'linkedin_id';
+    } else {
+      return res.status(400).json({ message: `Unsupported sign-in provider: ${signInProvider}` });
+    }
+
+    // Check if user exists by provider-specific ID (which is the Firebase UID for that user)
+    const providerUserResult = await db.query(`SELECT * FROM users WHERE ${providerIdColumn} = $1`, [providerIdValue]);
+    if (providerUserResult.rows.length > 0) {
+      existingUser = providerUserResult.rows[0];
+    } else if (email) {
+      // If not found by provider_id, check by email (for linking accounts)
+      const emailUserResult = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      if (emailUserResult.rows.length > 0) {
+        existingUser = emailUserResult.rows[0];
+        // If user found by email but this provider_id is not set, link the account
+        if (!existingUser[providerIdColumn]) {
+          await db.query(`UPDATE users SET ${providerIdColumn} = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [providerIdValue, existingUser.id]);
+          existingUser[providerIdColumn] = providerIdValue; // Update in-memory object
+        }
+      }
+    }
+
+    if (existingUser) {
+      user = existingUser;
+      // Optionally update name/picture if changed
+      // Consider if full_name should be updated if it's empty or different from 'name'
+      if (name && (!user.full_name || user.full_name !== name)) {
+         // await db.query('UPDATE users SET full_name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [name, user.id]);
+         // user.full_name = name; // Keep in-memory object consistent - for now, let's not auto-update name
+      }
+    } else {
+      // New user: Create account
+      const placeholderPassword = await bcrypt.hash(`${signInProvider}_${Date.now()}_${Math.random()}`, 10);
+
+      const insertQuery = `
+        INSERT INTO users (email, password_hash, full_name, user_type, ${providerIdColumn})
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, email, user_type, full_name, company_name, google_id, linkedin_id, created_at, updated_at`;
+
+      const newUserResult = await db.query(insertQuery, [email, placeholderPassword, name || 'User', 'individual', providerIdValue]);
+      user = newUserResult.rows[0];
+
+      // Optionally create a basic user_profiles entry here
+      // await db.query('INSERT INTO user_profiles (user_id, bio) VALUES ($1, $2)', [user.id, `Signed up with ${signInProvider}.`]);
+    }
+
+    // Generate application JWT
+    const appTokenPayload = {
+      userId: user.id,
+      userType: user.user_type,
+      email: user.email,
+    };
+    const appToken = jwt.sign(
+      appTokenPayload,
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+    );
+
+    res.json({
+      message: 'Google Sign-In successful!',
+      token: appToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        user_type: user.user_type,
+        full_name: user.full_name,
+        company_name: user.company_name,
+        // Potentially add google_id or other relevant fields from your 'users' table
+      },
+    });
+
+  } catch (error) {
+    console.error('Error during Google Sign-In:', error);
+    if (error.code === 'auth/id-token-expired' || error.code === 'auth/id-token-revoked' || error.code === 'auth/invalid-id-token') {
+      return res.status(401).json({ message: 'Invalid or expired Google ID token.' });
+    }
+    // Pass to global error handler for other errors
+    const err = new Error('Server error during Google Sign-In.');
+    err.statusCode = 500;
+    next(err);
+  }
+});
