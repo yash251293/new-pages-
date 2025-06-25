@@ -133,24 +133,37 @@ export default function LoginPage() {
       const idToken = await userCredential.user.getIdToken();
       console.log("idToken obtained:", idToken ? "Yes" : "No");
 
+      // The backend now handles whether to log in or instruct to sign up.
+      // It will return a successful response for login, or an error for other cases.
       const backendResponse = await api.loginWithGoogleAPI(idToken);
 
+      // Assuming successful login if no error was thrown by api.loginWithGoogleAPI
+      // (which should throw for non-2xx responses if using a typical fetch wrapper)
       if (backendResponse.token && backendResponse.user) {
         toast.success("Google Sign-In successful! Redirecting...");
         auth.login(backendResponse.token, backendResponse.user);
-        router.push('/feed');
+        router.push('/feed'); // Or to a more appropriate page like /dashboard
       } else {
-        throw new Error(backendResponse.message || "Google Sign-In failed on backend.");
+        // This case should ideally not be reached if api.loginWithGoogleAPI throws on error.
+        // However, as a fallback:
+        console.error("Google Sign-In backend response missing token or user, but no error thrown:", backendResponse);
+        toast.error(backendResponse.message || "Google Sign-In failed on backend (unexpected response).");
       }
     } catch (error: any) {
-      console.error("Google Sign-In failed:", error);
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.info("Google Sign-In cancelled.");
+      console.error("Google Sign-In failed:", error); // Log the full error
+
+      // Check for the specific "user not found, sign up required" case
+      // The backend was modified to return HTTP 404 and a code: 'USER_NOT_FOUND_SIGNUP_REQUIRED'
+      if (error.response?.status === 404 && error.response?.data?.code === 'USER_NOT_FOUND_SIGNUP_REQUIRED') {
+        toast.error("Account not found. Please sign up before signing in with Google.");
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        toast.info("Google Sign-In cancelled by user.");
       } else if (error.code === 'auth/account-exists-with-different-credential') {
-        toast.error("An account already exists with the same email address but different sign-in credentials. Sign in using a provider associated with this email address.");
-      }
-      else {
-        toast.error(error.data?.message || error.message || "An unexpected error occurred during Google Sign-In.");
+        toast.error("An account already exists with the same email address but different sign-in credentials. Please use the original sign-in method for that email.");
+      } else {
+        // For other errors, display the message from backend if available, or a generic one.
+        const message = error.response?.data?.message || error.message || "An unexpected error occurred during Google Sign-In.";
+        toast.error(message);
       }
     } finally {
       setIsGoogleLoading(false);
