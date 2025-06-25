@@ -151,7 +151,7 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
 
   const flushList = () => {
     if (currentList.length > 0) {
-      elements.push(<ul key={`ul-${elements.length}`} className="list-disc list-inside my-2 space-y-1">{currentList}</ul>);
+      elements.push(<ul key={`ul-${elements.length}`} className="list-disc list-inside my-4 space-y-2 text-brand-text-medium">{currentList}</ul>);
       currentList = [];
     }
   };
@@ -162,12 +162,14 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
     // Handle headings
     if (line.startsWith('## ')) {
       flushList();
-      elements.push(<h2 key={i} className="text-2xl font-semibold mt-6 mb-3">{line.substring(3)}</h2>);
+      // Use font-heading for H2, consistent with landing page sections
+      elements.push(<h2 key={i} className="text-2xl lg:text-3xl font-heading text-brand-text-dark mt-10 mb-4">{line.substring(3)}</h2>);
       continue;
     }
     if (line.startsWith('# ')) {
       flushList();
-      elements.push(<h1 key={i} className="text-3xl font-bold mt-8 mb-4">{line.substring(2)}</h1>);
+      // Use font-logo for H1, consistent with landing page main title
+      elements.push(<h1 key={i} className="text-3xl lg:text-4xl font-logo text-brand-text-darker mt-8 mb-6">{line.substring(2)}</h1>);
       continue;
     }
 
@@ -177,7 +179,7 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
       // Process bold within list item
       const parts = listItemText.split(/(\*\*.*?\*\*)/g).map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
+          return <strong key={index} className="font-semibold text-brand-text-dark">{part.substring(2, part.length - 2)}</strong>;
         }
         return part;
       });
@@ -191,14 +193,15 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
     if (line) {
       const parts = line.split(/(\*\*.*?\*\*)/g).map((part, index) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={index}>{part.substring(2, part.length - 2)}</strong>;
+          return <strong key={index} className="font-semibold text-brand-text-dark">{part.substring(2, part.length - 2)}</strong>;
         }
         return part;
       });
-      elements.push(<p key={i} className="my-2 leading-relaxed">{parts}</p>);
+      // Use text-base for paragraphs, consistent with landing page feature descriptions
+      elements.push(<p key={i} className="text-base text-brand-text-medium leading-relaxed my-4">{parts}</p>);
     } else {
-      // Preserve empty lines as paragraph breaks if needed, or just skip
-      elements.push(<br key={`br-${i}`} />);
+      // Preserve empty lines as paragraph breaks if needed, by not rendering anything or a specific spacer
+      // elements.push(<div key={`br-${i}`} className="h-4" />); // Example of a spacer
     }
   }
   flushList(); // Flush any remaining list items
@@ -222,9 +225,9 @@ export default function PrivacyPolicyPage() {
     .replace(/\[Link to a Contact Form on your website - Optional\]/g, '#contact'); // Placeholder
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl bg-white shadow-lg rounded-lg p-6 md:p-10">
-        <article className="prose prose-sm sm:prose lg:prose-lg xl:prose-xl max-w-none">
+    <div className="min-h-screen bg-brand-bg-light-gray py-8 md:py-12"> {/* Consistent page background */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl bg-white shadow-xl rounded-xl p-6 md:p-10 lg:p-12"> {/* Enhanced card styling */}
+        <article className="max-w-none"> {/* Removed prose classes */}
           {/* Using a very basic Markdown to JSX renderer */}
           <SimpleMarkdownRenderer markdown={processedContent} />
         </article>
