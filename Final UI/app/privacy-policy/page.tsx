@@ -163,13 +163,13 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
     if (line.startsWith('## ')) {
       flushList();
       // Use font-heading for H2, consistent with landing page sections
-      elements.push(<h2 key={i} style={{ color: 'blue', fontFamily: 'Impact, sans-serif' }} className="font-heading text-2xl lg:text-3xl text-brand-text-dark mt-10 mb-4">{line.substring(3)}</h2>);
+      elements.push(<h2 key={i} className="font-heading text-2xl lg:text-3xl text-brand-text-dark mt-10 mb-4">{line.substring(3)}</h2>);
       continue;
     }
     if (line.startsWith('# ')) {
       flushList();
       // Use font-logo for H1, consistent with landing page main title
-      elements.push(<h1 key={i} style={{ color: 'red', fontFamily: 'Arial, sans-serif' }} className="font-logo text-3xl lg:text-4xl text-brand-text-darker mt-8 mb-6">{line.substring(2)}</h1>);
+      elements.push(<h1 key={i} className="font-logo text-3xl lg:text-4xl text-brand-text-darker mt-8 mb-6">{line.substring(2)}</h1>);
       continue;
     }
 
