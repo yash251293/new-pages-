@@ -150,7 +150,7 @@ function SignUpFormLogicContainer() {
   const handleUserTypeChange = (newUserType: 'company' | 'individual') => {
     console.log("LOG: handleUserTypeChange called with:", newUserType); // Log 4
     setValue("user_type", newUserType, { shouldValidate: true, shouldDirty: true });
-    trigger("user_type");
+    // trigger("user_type"); // Likely redundant when shouldValidate: true is used with setValue
   };
 
   // JSX structure from new-signup-page.tsx, with RHF integration
