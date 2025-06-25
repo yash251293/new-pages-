@@ -201,10 +201,10 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
           <p>&copy; {new Date().getFullYear()} 100Networks. All rights reserved.</p>
           <div className="mt-2 space-x-4">
-            <Link href="#" className="hover:underline">
+            <Link href="/privacy-policy" className="hover:underline">
               Privacy Policy
             </Link>
-            <Link href="#" className="hover:underline">
+            <Link href="#" className="hover:underline"> {/* Assuming Terms of Service will be a separate page later */}
               Terms of Service
             </Link>
           </div>
