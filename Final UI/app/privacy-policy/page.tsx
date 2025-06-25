@@ -151,7 +151,7 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
 
   const flushList = () => {
     if (currentList.length > 0) {
-      elements.push(<ul key={`ul-${elements.length}`} className="list-disc list-inside my-4 space-y-2 text-brand-text-medium">{currentList}</ul>);
+      elements.push(<ul key={`ul-${elements.length}`} className="list-disc list-inside my-4 pl-4 space-y-2 text-brand-text-medium">{currentList}</ul>);
       currentList = [];
     }
   };
@@ -163,13 +163,13 @@ const SimpleMarkdownRenderer = ({ markdown }: { markdown: string }) => {
     if (line.startsWith('## ')) {
       flushList();
       // Use font-heading for H2, consistent with landing page sections
-      elements.push(<h2 key={i} className="text-2xl lg:text-3xl font-heading text-brand-text-dark mt-10 mb-4">{line.substring(3)}</h2>);
+      elements.push(<h2 key={i} className="font-heading text-2xl lg:text-3xl text-brand-text-dark mt-10 mb-4">{line.substring(3)}</h2>);
       continue;
     }
     if (line.startsWith('# ')) {
       flushList();
       // Use font-logo for H1, consistent with landing page main title
-      elements.push(<h1 key={i} className="text-3xl lg:text-4xl font-logo text-brand-text-darker mt-8 mb-6">{line.substring(2)}</h1>);
+      elements.push(<h1 key={i} className="font-logo text-3xl lg:text-4xl text-brand-text-darker mt-8 mb-6">{line.substring(2)}</h1>);
       continue;
     }
 
