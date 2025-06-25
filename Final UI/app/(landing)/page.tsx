@@ -204,7 +204,7 @@ export default function LandingPage() {
             <Link href="/privacy-policy" className="hover:underline">
               Privacy Policy
             </Link>
-            <Link href="#" className="hover:underline"> {/* Assuming Terms of Service will be a separate page later */}
+            <Link href="/terms" className="hover:underline"> {/* Assuming Terms of Service will be a separate page later */}
               Terms of Service
             </Link>
           </div>
