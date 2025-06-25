@@ -72,6 +72,7 @@ const formSchema = z.object({
 type SignUpFormValues = z.infer<typeof formSchema>;
 
 function SignUpContent() {
+  console.log("SignUpContent rendering"); // Basic check if component is rendering
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   // const [userTypeState, setUserTypeState] = useState<'company' | 'individual'>('individual'); // Replaced by react-hook-form's watch
