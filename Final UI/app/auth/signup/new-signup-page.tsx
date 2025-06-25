@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Logo } from "@/components/logo";
-import { ChromeIcon, EyeIcon, EyeOffIcon } from "lucide-react";
+// import { Logo } from "@/components/logo"; // Removed unused import
+import { EyeIcon, EyeOffIcon } from "lucide-react"; // Removed unused ChromeIcon
 import { useState, useEffect, Suspense } from "react"; // ADD Suspense here
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
