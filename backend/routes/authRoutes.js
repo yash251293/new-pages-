@@ -216,60 +216,59 @@ router.post('/google-signin', async (req, res, next) => {
     const signInProvider = decodedToken.firebase.sign_in_provider; // e.g., 'google.com', 'linkedin.com'
 
     let user;
-    let existingUser;
+    // Define all user fields to be selected or returned
+    const userFieldsToSelect = "id, email, user_type, full_name, company_name, industry, company_size, profile_picture_url, cover_photo_url, headline, is_phone_verified, google_id, linkedin_id, created_at, updated_at";
+
     let providerIdColumn;
-    let providerIdValue = firebase_uid; // Use Firebase UID as the provider-specific ID
+    let providerIdValue = firebase_uid;
 
     if (signInProvider === 'google.com') {
       providerIdColumn = 'google_id';
     } else if (signInProvider === 'linkedin.com') {
-      providerIdColumn = 'linkedin_id';
+      providerIdColumn = 'linkedin_id'; // Assumes this column exists
     } else {
       return res.status(400).json({ message: `Unsupported sign-in provider: ${signInProvider}` });
     }
 
-    // Check if user exists by provider-specific ID (which is the Firebase UID for that user)
-    const providerUserResult = await db.query(`SELECT * FROM users WHERE ${providerIdColumn} = $1`, [providerIdValue]);
+    // Try to find user by provider ID
+    const providerUserResult = await db.query(`SELECT ${userFieldsToSelect.replace("password_hash, ", "")} FROM users WHERE ${providerIdColumn} = $1`, [providerIdValue]);
     if (providerUserResult.rows.length > 0) {
-      existingUser = providerUserResult.rows[0];
+      user = providerUserResult.rows[0];
     } else if (email) {
-      // If not found by provider_id, check by email (for linking accounts)
-      const emailUserResult = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      // If not found by provider_id, try to find by email
+      const emailUserResult = await db.query(`SELECT ${userFieldsToSelect.replace("password_hash, ", "")} FROM users WHERE LOWER(email) = LOWER($1)`, [email]);
       if (emailUserResult.rows.length > 0) {
-        existingUser = emailUserResult.rows[0];
-        // If user found by email but this provider_id is not set, link the account
-        if (!existingUser[providerIdColumn]) {
-          await db.query(`UPDATE users SET ${providerIdColumn} = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [providerIdValue, existingUser.id]);
-          existingUser[providerIdColumn] = providerIdValue; // Update in-memory object
+        user = emailUserResult.rows[0];
+        // User exists with this email, link the provider ID
+        if (!user[providerIdColumn]) {
+          await db.query(`UPDATE users SET ${providerIdColumn} = $1, profile_picture_url = COALESCE(profile_picture_url, $3), updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [providerIdValue, user.id, picture]);
+          user[providerIdColumn] = providerIdValue; // Update in-memory object
+          if (picture && !user.profile_picture_url) user.profile_picture_url = picture;
         }
       }
     }
 
-    if (existingUser) {
-      user = existingUser;
-      // Optionally update name/picture if changed
-      // Consider if full_name should be updated if it's empty or different from 'name'
-      if (name && (!user.full_name || user.full_name !== name)) {
-         // await db.query('UPDATE users SET full_name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [name, user.id]);
-         // user.full_name = name; // Keep in-memory object consistent - for now, let's not auto-update name
-      }
-    } else {
-      // New user: Create account
-      const placeholderPassword = await bcrypt.hash(`${signInProvider}_${Date.now()}_${Math.random()}`, 10);
-
-      const insertQuery = `
-        INSERT INTO users (email, password_hash, full_name, user_type, ${providerIdColumn})
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, email, user_type, full_name, company_name, google_id, linkedin_id, created_at, updated_at`;
-
-      const newUserResult = await db.query(insertQuery, [email, placeholderPassword, name || 'User', 'individual', providerIdValue]);
-      user = newUserResult.rows[0];
-
-      // Optionally create a basic user_profiles entry here
-      // await db.query('INSERT INTO user_profiles (user_id, bio) VALUES ($1, $2)', [user.id, `Signed up with ${signInProvider}.`]);
+    if (!user) {
+      // User not found by provider ID or email - Instruct to sign up
+      // This is the key change for the login page Google Sign-In behavior
+      return res.status(404).json({
+        message: 'Account not found. Please sign up first using this Google account or your email.',
+        code: 'USER_NOT_FOUND_SIGNUP_REQUIRED' // Custom code for frontend to identify this specific case
+      });
     }
 
-    // Generate application JWT
+    // User exists (either directly by provider ID or by email and now linked)
+    // Optionally update name/picture if changed and not already set by linking
+    if (user && name && (!user.full_name || user.full_name === 'User') && user.full_name !== name) {
+        await db.query('UPDATE users SET full_name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [name, user.id]);
+        user.full_name = name;
+    }
+    if (user && picture && !user.profile_picture_url) {
+        await db.query('UPDATE users SET profile_picture_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [picture, user.id]);
+        user.profile_picture_url = picture;
+    }
+
+    // Generate application JWT for the found/linked user
     const appTokenPayload = {
       userId: user.id,
       userType: user.user_type,
