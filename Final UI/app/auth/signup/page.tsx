@@ -154,6 +154,7 @@ function SignUpContent() {
   // Handler for user type button clicks
   const handleUserTypeChange = (newUserType: 'company' | 'individual') => {
     setValue("user_type", newUserType, { shouldValidate: true, shouldDirty: true });
+    trigger("user_type"); // Explicitly trigger to ensure watch updates
   };
 
   return (
