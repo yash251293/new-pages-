@@ -147,8 +147,8 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Retrieve user by email, including the new 'role' field
-    const userResult = await db.query('SELECT id, email, password_hash, user_type, full_name, company_name, role FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+    // Retrieve user by email
+    const userResult = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
     if (userResult.rows.length === 0) {
       return res.status(401).json({ message: 'Invalid credentials. User not found.' });
     }
@@ -165,8 +165,7 @@ router.post('/login', async (req, res) => {
     const payload = {
       userId: user.id,
       userType: user.user_type,
-      email: user.email,
-      role: user.role // Add role to JWT payload
+      email: user.email
       // Add other relevant non-sensitive info if needed
     };
 
@@ -185,7 +184,6 @@ router.post('/login', async (req, res) => {
         id: user.id,
         email: user.email,
         user_type: user.user_type,
-        role: user.role, // Add role to user object in response
         full_name: user.full_name,
         company_name: user.company_name
       }
@@ -219,13 +217,13 @@ router.post('/google-signin', async (req, res, next) => {
     let user;
     let existingUser;
 
-    // Check if user exists by google_id, include 'role'
-    const googleUserResult = await db.query('SELECT id, email, password_hash, user_type, full_name, company_name, google_id, role FROM users WHERE google_id = $1', [google_id]);
+    // Check if user exists by google_id
+    const googleUserResult = await db.query('SELECT * FROM users WHERE google_id = $1', [google_id]);
     if (googleUserResult.rows.length > 0) {
       existingUser = googleUserResult.rows[0];
     } else if (email) {
-      // If not found by google_id, check by email (for linking accounts or if email is verified by Google), include 'role'
-      const emailUserResult = await db.query('SELECT id, email, password_hash, user_type, full_name, company_name, google_id, role FROM users WHERE LOWER(email) = LOWER($1)', [email]);
+      // If not found by google_id, check by email (for linking accounts or if email is verified by Google)
+      const emailUserResult = await db.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1)', [email]);
       if (emailUserResult.rows.length > 0) {
         existingUser = emailUserResult.rows[0];
         // If user found by email but google_id is not set, link the account
@@ -254,8 +252,8 @@ router.post('/google-signin', async (req, res, next) => {
       const newUserResult = await db.query(
         `INSERT INTO users (email, password_hash, full_name, user_type, google_id)
          VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, email, user_type, full_name, company_name, google_id, role, created_at, updated_at`, // Added 'role' to RETURNING
-        [email, placeholderPassword, name || 'User', 'individual', google_id] // Default to 'individual', name from token. DB defaults 'role' to 'user'.
+         RETURNING id, email, user_type, full_name, company_name, google_id, created_at, updated_at`,
+        [email, placeholderPassword, name || 'User', 'individual', google_id] // Default to 'individual', name from token
       );
       user = newUserResult.rows[0];
 
@@ -268,7 +266,6 @@ router.post('/google-signin', async (req, res, next) => {
       userId: user.id,
       userType: user.user_type,
       email: user.email,
-      role: user.role // Add role to JWT payload for Google Sign-In
     };
     const appToken = jwt.sign(
       appTokenPayload,
@@ -283,7 +280,6 @@ router.post('/google-signin', async (req, res, next) => {
         id: user.id,
         email: user.email,
         user_type: user.user_type,
-        role: user.role, // Add role to user object in response for Google Sign-In
         full_name: user.full_name,
         company_name: user.company_name,
         // Potentially add google_id or other relevant fields from your 'users' table

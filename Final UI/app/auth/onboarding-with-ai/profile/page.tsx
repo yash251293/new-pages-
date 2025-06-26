@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { SearchIcon, XIcon, MapPinIcon, BuildingIcon, LinkIcon, BriefcaseIcon, UsersIcon, UserIcon, GraduationCapIcon } from "lucide-react"
 import Link from "next/link"
-// import { OnboardingStepperWrapper } from "@/components/onboarding-stepper-wrapper" // Temporarily removed
+import { OnboardingStepper } from "@/components/onboarding-stepper" // Use existing stepper
 import { useSearchParams } from "next/navigation"
-// import { AIFormField } from "@/components/ai-form-field" // Temporarily removed
+// import { AIFormField } from "@/components/ai-form-field" // AIFormField removed for now
 
 export default function ProfilePage() {
   const searchParams = useSearchParams()
@@ -26,8 +26,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-brand-bg-light-gray py-4 sm:py-8 px-4">
-      {/* <OnboardingStepperWrapper /> */} {/* Stepper placeholder */}
-      <div>Stepper Placeholder</div> {/* Stepper placeholder */}
+      <OnboardingStepper /> {/* Replaced with existing stepper */}
       <div className="max-w-3xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 relative">
         {/* Skip to Explore Button - Left Side */}
         <Button
@@ -173,7 +172,7 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       Tell us about your company's mission, values, and what makes you unique.
                     </p>
-                    {/* <AIFormField was here> */}
+                    {/* AIFormField for Company Description removed. Using Textarea directly. */}
                     <Textarea
                       id="companyDescription"
                       value={companyDescription}
@@ -181,7 +180,6 @@ export default function ProfilePage() {
                       placeholder="Describe your company..."
                       className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
                     />
-                    {/* </AIFormField was here> */}
                   </div>
                 </div>
               </div>
@@ -221,7 +219,7 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       What technologies, tools, and platforms does your company use?
                     </p>
-                    {/* <AIFormField was here> */}
+                    {/* AIFormField for Tech Stack removed. Using Textarea directly. */}
                     <Textarea
                       id="techStack"
                       value={techStack}
@@ -229,7 +227,6 @@ export default function ProfilePage() {
                       placeholder="React, Node.js, Python, AWS..."
                       className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                     />
-                    {/* </AIFormField was here> */}
                   </div>
                 </div>
               </div>
@@ -286,7 +283,7 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       What's your current role or the role you're seeking?
                     </p>
-                    {/* <AIFormField was here> */}
+                    {/* AIFormField for Professional Title removed. Using Input directly. */}
                     <Input
                       id="professionalTitle"
                       value={professionalTitle}
@@ -294,7 +291,6 @@ export default function ProfilePage() {
                       placeholder="Software Developer, Product Manager..."
                       className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 text-sm sm:text-base"
                     />
-                    {/* </AIFormField was here> */}
                   </div>
 
                   <div>
@@ -333,7 +329,7 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       List your top skills and technologies.
                     </p>
-                    {/* <AIFormField was here> */}
+                    {/* AIFormField for Key Skills removed. Using Textarea directly. */}
                     <Textarea
                       id="keySkills"
                       value={keySkills}
@@ -341,7 +337,6 @@ export default function ProfilePage() {
                       placeholder="JavaScript, React, Python, Project Management..."
                       className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                     />
-                    {/* </AIFormField was here> */}
                   </div>
 
                   <div>

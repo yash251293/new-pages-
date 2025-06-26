@@ -36,11 +36,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Only start listening if the file is run directly (not imported as a module for testing)
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-}
-
-module.exports = app; // Export the app for testing
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
