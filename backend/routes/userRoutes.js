@@ -85,7 +85,9 @@ router.get('/me', authMiddleware, async (req, res) => {
         up.culture_preferences, up.remote_policy_importance, up.quiet_office_importance,
         up.ideal_next_job_description,
         -- Resume
-        up.resume_file_path
+        up.resume_file_path,
+        -- New fields
+        up.gender, up.date_of_birth
       FROM users u
       LEFT JOIN user_profiles up ON u.id = up.user_id
       WHERE u.id = $1;
@@ -152,7 +154,11 @@ router.get('/me', authMiddleware, async (req, res) => {
         ideal_next_job_description: userData.ideal_next_job_description,
 
         // Resume
-        resume_file_path: userData.resume_file_path
+        resume_file_path: userData.resume_file_path,
+
+        // New fields
+        gender: userData.gender,
+        dateOfBirth: userData.date_of_birth // Ensure mapping snake_case from DB to camelCase in JSON
       }
     };
 
@@ -198,7 +204,9 @@ router.put('/profile', authMiddleware, async (req, res) => {
     website_url,
     bio,
     company_type, // company
-    tech_stack // company
+    tech_stack, // company
+    gender, // individual - new
+    dateOfBirth // individual - new
   } = req.body;
 
   const client = await db.pool.connect(); // Assuming db exports a pool object
@@ -225,13 +233,19 @@ router.put('/profile', authMiddleware, async (req, res) => {
     }
 
     // 2. Upsert into 'user_profiles' table
+    // Add user_type from token to conditionally include gender and dateOfBirth
+    const userType = req.user.userType;
+
     const profileFields = {
       location, professional_title, years_of_experience, job_function,
       key_skills, education_level, field_of_study, institution,
-      linkedin_url, website_url, bio, company_type, tech_stack
+      linkedin_url, website_url, bio, company_type, tech_stack,
+      // Add gender and dateOfBirth only if userType is 'individual' and fields are provided
+      ...(userType === 'individual' && gender !== undefined && { gender }),
+      ...(userType === 'individual' && dateOfBirth !== undefined && { dateOfBirth }),
     };
 
-    const definedProfileFields = {};
+    const definedProfileFields: { [key: string]: any } = {}; // Ensure type for definedProfileFields
     for (const key in profileFields) {
       if (profileFields[key] !== undefined) {
         definedProfileFields[key] = profileFields[key];
