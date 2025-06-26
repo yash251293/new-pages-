@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { SearchIcon, XIcon, MapPinIcon, BuildingIcon, LinkIcon, BriefcaseIcon, UsersIcon, UserIcon, GraduationCapIcon } from "lucide-react"
 import Link from "next/link"
-import { OnboardingStepperWrapper } from "@/components/onboarding-stepper-wrapper"
+// import { OnboardingStepperWrapper } from "@/components/onboarding-stepper-wrapper" // Temporarily removed
 import { useSearchParams } from "next/navigation"
-import { AIFormField } from "@/components/ai-form-field"
+// import { AIFormField } from "@/components/ai-form-field" // Temporarily removed
 
 export default function ProfilePage() {
   const searchParams = useSearchParams()
@@ -26,7 +26,8 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-brand-bg-light-gray py-4 sm:py-8 px-4">
-      <OnboardingStepperWrapper />
+      {/* <OnboardingStepperWrapper /> */} {/* Stepper placeholder */}
+      <div>Stepper Placeholder</div> {/* Stepper placeholder */}
       <div className="max-w-3xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 relative">
         {/* Skip to Explore Button - Left Side */}
         <Button
@@ -172,26 +173,15 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       Tell us about your company's mission, values, and what makes you unique.
                     </p>
-                    <AIFormField
-                      aiProps={{
-                        fieldType: 'textarea',
-                        fieldName: 'Company Description',
-                        placeholder: 'Describe your company...',
-                        value: companyDescription,
-                        onChange: (value) => setCompanyDescription(value as string),
-                        context: {
-                          userType: 'company'
-                        }
-                      }}
-                    >
-                      <Textarea
-                        id="companyDescription"
-                        value={companyDescription}
-                        onChange={(e) => setCompanyDescription(e.target.value)}
-                        placeholder="Describe your company..."
-                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
-                      />
-                    </AIFormField>
+                    {/* <AIFormField was here> */}
+                    <Textarea
+                      id="companyDescription"
+                      value={companyDescription}
+                      onChange={(e) => setCompanyDescription(e.target.value)}
+                      placeholder="Describe your company..."
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
+                    />
+                    {/* </AIFormField was here> */}
                   </div>
                 </div>
               </div>
@@ -231,26 +221,15 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       What technologies, tools, and platforms does your company use?
                     </p>
-                    <AIFormField
-                      aiProps={{
-                        fieldType: 'textarea',
-                        fieldName: 'Tech Stack',
-                        placeholder: 'React, Node.js, Python, AWS...',
-                        value: techStack,
-                        onChange: (value) => setTechStack(value as string),
-                        context: {
-                          userType: 'company'
-                        }
-                      }}
-                    >
-                      <Textarea
-                        id="techStack"
-                        value={techStack}
-                        onChange={(e) => setTechStack(e.target.value)}
-                        placeholder="React, Node.js, Python, AWS..."
-                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
-                      />
-                    </AIFormField>
+                    {/* <AIFormField was here> */}
+                    <Textarea
+                      id="techStack"
+                      value={techStack}
+                      onChange={(e) => setTechStack(e.target.value)}
+                      placeholder="React, Node.js, Python, AWS..."
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
+                    />
+                    {/* </AIFormField was here> */}
                   </div>
                 </div>
               </div>
@@ -307,26 +286,15 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       What's your current role or the role you're seeking?
                     </p>
-                    <AIFormField
-                      aiProps={{
-                        fieldType: 'input',
-                        fieldName: 'Professional Title',
-                        placeholder: 'Software Developer, Product Manager...',
-                        value: professionalTitle,
-                        onChange: (value) => setProfessionalTitle(value as string),
-                        context: {
-                          userType: 'individual'
-                        }
-                      }}
-                    >
-                      <Input
-                        id="professionalTitle"
-                        value={professionalTitle}
-                        onChange={(e) => setProfessionalTitle(e.target.value)}
-                        placeholder="Software Developer, Product Manager..."
-                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 text-sm sm:text-base"
-                      />
-                    </AIFormField>
+                    {/* <AIFormField was here> */}
+                    <Input
+                      id="professionalTitle"
+                      value={professionalTitle}
+                      onChange={(e) => setProfessionalTitle(e.target.value)}
+                      placeholder="Software Developer, Product Manager..."
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 text-sm sm:text-base"
+                    />
+                    {/* </AIFormField was here> */}
                   </div>
 
                   <div>
@@ -365,26 +333,15 @@ export default function ProfilePage() {
                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
                       List your top skills and technologies.
                     </p>
-                    <AIFormField
-                      aiProps={{
-                        fieldType: 'textarea',
-                        fieldName: 'Key Skills',
-                        placeholder: 'JavaScript, React, Python, Project Management...',
-                        value: keySkills,
-                        onChange: (value) => setKeySkills(value as string),
-                        context: {
-                          userType: 'individual'
-                        }
-                      }}
-                    >
-                      <Textarea
-                        id="keySkills"
-                        value={keySkills}
-                        onChange={(e) => setKeySkills(e.target.value)}
-                        placeholder="JavaScript, React, Python, Project Management..."
-                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
-                      />
-                    </AIFormField>
+                    {/* <AIFormField was here> */}
+                    <Textarea
+                      id="keySkills"
+                      value={keySkills}
+                      onChange={(e) => setKeySkills(e.target.value)}
+                      placeholder="JavaScript, React, Python, Project Management..."
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
+                    />
+                    {/* </AIFormField was here> */}
                   </div>
 
                   <div>
