@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/logo";
-import { ChromeIcon, EyeIcon, EyeOffIcon } from "lucide-react";
-import { useState, useEffect, Suspense } from "react"; // ADD Suspense here
+import { ChromeIcon, EyeIcon, EyeOffIcon, CalendarIcon } from "lucide-react"; // Added CalendarIcon
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select components
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,14 +27,38 @@ const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   confirmPassword: z.string(),
+  gender: z.string().optional(), // Added gender
+  dateOfBirth: z.string().optional(), // Added dateOfBirth
 }).refine(data => {
-    if (data.user_type === 'individual' && !data.full_name?.trim()) {
+    if (data.user_type === 'individual') {
+      if (!data.full_name?.trim()) {
         return false;
+      }
     }
     return true;
 }, {
     message: "Full name is required for individual users.",
     path: ["full_name"],
+}).refine(data => {
+    if (data.user_type === 'individual') {
+      if (!data.gender?.trim()) {
+        return false;
+      }
+    }
+    return true;
+}, {
+    message: "Gender is required.",
+    path: ["gender"],
+}).refine(data => {
+    if (data.user_type === 'individual') {
+      if (!data.dateOfBirth?.trim()) {
+        return false;
+      }
+    }
+    return true;
+}, {
+    message: "Date of Birth is required.",
+    path: ["dateOfBirth"],
 }).refine(data => {
     if (data.user_type === 'company' && !data.company_name?.trim()) {
         return false;
@@ -70,6 +95,8 @@ function SignUpContent() {
       company_name: "",
       industry: "",
       company_size: "",
+      gender: "",
+      dateOfBirth: "",
     }
   });
 
@@ -82,17 +109,22 @@ function SignUpContent() {
   const onSubmit: SubmitHandler<SignUpFormValues> = async (data) => {
     setIsLoading(true);
 
-    const { confirmPassword, ...apiData } = data;
+    const { confirmPassword, ...restOfData } = data;
+    let apiData: Partial<SignUpFormValues> = { ...restOfData };
+
     if (apiData.user_type === 'individual') {
         delete apiData.company_name;
         delete apiData.industry;
         delete apiData.company_size;
-    } else {
+    } else { // company
         delete apiData.full_name;
+        delete apiData.gender;
+        delete apiData.dateOfBirth;
     }
+    console.log("Data being sent to API:", apiData); // Log data before sending
 
     try {
-      const response = await registerUser(apiData);
+      const response = await registerUser(apiData as SignUpFormValues); // Cast as SignUpFormValues, ensure all required fields are present or handle optionality in API
       console.log("Registration successful:", response);
 
       try {
@@ -165,11 +197,47 @@ function SignUpContent() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Conditional Fields for individual/company */}
           {userType === 'individual' && (
-            <div>
-              <Label htmlFor="fullName" className="text-sm font-semibold text-brand-text-medium">Full Name</Label>
-              <Input id="fullName" type="text" placeholder="Your Name" {...register("full_name")} className="mt-1 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-3 px-3 text-base"/>
-              {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name.message}</p>}
-            </div>
+            <>
+              <div>
+                <Label htmlFor="fullName" className="text-sm font-semibold text-brand-text-medium">Full Name</Label>
+                <Input id="fullName" type="text" placeholder="Your Name" {...register("full_name")} className="mt-1 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-3 px-3 text-base"/>
+                {errors.full_name && <p className="text-red-500 text-xs mt-1">{errors.full_name.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="gender" className="text-sm font-semibold text-brand-text-medium">
+                  Gender <span className="text-red-500">*</span>
+                </Label>
+                <Select onValueChange={(value) => setValue("gender", value)} defaultValue={watch("gender")}>
+                  <SelectTrigger className="mt-1 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-3 px-3 text-base">
+                    <SelectValue placeholder="Select your gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.gender && <p className="text-red-500 text-xs mt-1">{errors.gender.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="dateOfBirth" className="text-sm font-semibold text-brand-text-medium">
+                  Date of Birth <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="dateOfBirth"
+                    type="date"
+                    {...register("dateOfBirth")}
+                    className="mt-1 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-brand-blue focus:ring-1 focus:ring-brand-blue py-3 px-3 pr-10 text-base"
+                    style={{ colorScheme: 'light' }}
+                    onFocus={(e) => e.target.showPicker?.()}
+                  />
+                  <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 mt-0.5 h-5 w-5 text-brand-text-medium pointer-events-none" />
+                </div>
+                {errors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth.message}</p>}
+              </div>
+            </>
           )}
           {userType === 'company' && (
             <>
