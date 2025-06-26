@@ -1,48 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react"; // Added useEffect
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { SearchIcon, XIcon, MapPinIcon, BuildingIcon, LinkIcon, BriefcaseIcon, UserIcon, GraduationCapIcon } from "lucide-react"; // Removed UsersIcon as it's not used
-import { OnboardingStepper } from "@/components/onboarding-stepper";
+import { MapPinIcon, BuildingIcon, LinkIcon, BriefcaseIcon, UserIcon, GraduationCapIcon, SearchIcon, XIcon } from "lucide-react";
+import { OnboardingStepper } from "@/components/onboarding-stepper"; // Standard stepper
+import Link from "next/link"; // For skip buttons
 
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useForm, SubmitHandler, Controller } from "react-hook-form"; // Added Controller
+import { useForm, SubmitHandler, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { toast } from "sonner";
 import { updateUserProfile } from "@/lib/api";
 
-// --- Zod Schema Definitions ---
+// --- Zod Schema Definitions (from existing functional page) ---
 const commonProfileSchema = z.object({
-  location: z.string().optional(), // Simplified for now, was a custom component
+  location: z.string().optional(),
   linkedin_url: z.string().url({ message: "Invalid LinkedIn URL, e.g. https://linkedin.com/in/yourprofile" }).optional().or(z.literal('')),
   website_url: z.string().url({ message: "Invalid website URL, e.g. https://example.com" }).optional().or(z.literal('')),
-  bio: z.string().max(1000, "Bio should not exceed 1000 characters.").optional(),
+  // 'bio' will be used for 'Company Description' for companies and 'Your Bio' for individuals
+  bio: z.string().max(1000, "Description/Bio should not exceed 1000 characters.").optional(),
 });
 
 const individualProfileSchema = commonProfileSchema.extend({
-  full_name: z.string().min(1, "Full name is required."), // From users table
-  professional_title: z.string().min(1, "Professional title is required.").optional(), // Made optional for now
+  full_name: z.string().min(1, "Full name is required."),
+  professional_title: z.string().min(1, "Professional title is required.").optional(), // Retaining optional from functional
   years_of_experience: z.string().optional(),
   job_function: z.string().optional(),
-  key_skills: z.string().optional(), // Comma-separated
-  education_level: z.string().optional(),
-  field_of_study: z.string().optional(),
-  institution: z.string().optional(),
-  industry: z.string().optional(), // Added industry field for individuals
+  key_skills: z.string().optional(), // Comma-separated in standard, will be a textarea
+  education_level: z.string().optional(), // This is a select in standard
+  field_of_study: z.string().optional(), // This is an input in standard
+  institution: z.string().optional(), // This is an input in standard
+  industry: z.string().optional(),
 });
 
 const companyProfileSchema = commonProfileSchema.extend({
-  company_name: z.string().min(1, "Company name is required."), // From users table
-  industry: z.string().optional(), // From users table
-  company_size: z.string().optional(), // From users table
+  company_name: z.string().min(1, "Company name is required."),
+  industry: z.string().optional(),
+  company_size: z.string().optional(),
   company_type: z.string().optional(),
-  tech_stack: z.string().optional(), // Comma-separated
+  tech_stack: z.string().optional(), // Comma-separated in standard, will be a textarea
 });
 
 type IndividualProfileValues = z.infer<typeof individualProfileSchema>;
@@ -51,23 +53,15 @@ type ProfileFormValues = IndividualProfileValues | CompanyProfileValues;
 
 
 export default function ProfilePage() {
-  const { user, token, isLoading: isAuthLoading, refetchUser } = useAuth(); // Hook 1
-  const router = useRouter(); // Hook 2
+  const { user, token, isLoading: isAuthLoading, refetchUser } = useAuth();
+  const router = useRouter();
 
-  // Determine userType for schema selection.
-  // User object might be initially undefined while isAuthLoading is true.
-  const userType = user?.user_type;
-
-  // Define currentSchema based on userType.
-  // Provide a fallback to individualProfileSchema if userType is initially undefined.
-  // This ensures useForm always receives a valid schema.
-  const currentSchema = userType === 'company' ? companyProfileSchema : individualProfileSchema;
+  const userTypeFromAuth = user?.user_type;
+  const currentSchema = userTypeFromAuth === 'company' ? companyProfileSchema : individualProfileSchema;
 
   const { register, handleSubmit, control, formState: { errors, isSubmitting }, reset } = useForm<ProfileFormValues>({
-    resolver: zodResolver(currentSchema), // currentSchema will be defined
+    resolver: zodResolver(currentSchema),
     defaultValues: {
-      // Initial default values can be empty or based on a general structure.
-      // The useEffect below will populate them once 'user' data is available.
       full_name: "",
       company_name: "",
       industry: "",
@@ -75,7 +69,7 @@ export default function ProfilePage() {
       location: "",
       linkedin_url: "",
       website_url: "",
-      bio: "",
+      bio: "", // Used for Company Description or Your Bio
       professional_title: "",
       years_of_experience: "",
       job_function: "",
@@ -86,16 +80,15 @@ export default function ProfilePage() {
       company_type: "",
       tech_stack: "",
     },
-  }); // Hook 3
+  });
 
-  // useEffect to reset form with user-specific default values when user data changes or becomes available.
   useEffect(() => {
-    if (user) { // user object is available
-      const userSpecificType = user.user_type; // Use user.user_type directly from the available user object
+    if (user) {
+      const userSpecificType = user.user_type;
       const defaultVals = {
         full_name: userSpecificType === 'individual' ? user.full_name || "" : undefined,
         company_name: userSpecificType === 'company' ? user.company_name || "" : undefined,
-        industry: userSpecificType === 'company' ? user.industry || "" : undefined,
+        industry: userSpecificType === 'company' ? user.industry || "" : (userSpecificType === 'individual' ? user.profile?.industry || "" : undefined),
         company_size: userSpecificType === 'company' ? user.company_size || "" : undefined,
         location: user.profile?.location || "",
         linkedin_url: user.profile?.linkedin_url || "",
@@ -113,15 +106,13 @@ export default function ProfilePage() {
       };
       reset(defaultVals);
     }
-  }, [user, reset]); // userType (derived from user) is implicitly handled by user dependency. Reset is stable.
+  }, [user, reset]);
 
-  // Conditional returns *after* all hooks have been called.
   if (isAuthLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading authentication details...</div>;
   }
 
-  // If user is not available (e.g. not logged in) or user_type is missing after loading.
-  if (!user || !user.user_type) { // Check user.user_type directly
+  if (!user || !user.user_type) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <p className="mb-4">User not found or user type not determined. Please log in.</p>
@@ -130,9 +121,7 @@ export default function ProfilePage() {
     );
   }
 
-  // The actual userType for rendering the form, derived from the now-guaranteed 'user' object.
-  const finalUserType = user.user_type;
-
+  const finalUserType = user.user_type; // Use this for rendering
 
   const onSubmit: SubmitHandler<ProfileFormValues> = async (data) => {
     if (!token) {
@@ -140,15 +129,14 @@ export default function ProfilePage() {
       return;
     }
     try {
-      // Ensure only relevant fields for the user type are sent
       let payload: any = {};
-      if (finalUserType === 'individual') { // Use finalUserType for logic
+      if (finalUserType === 'individual') {
         const individualData = data as IndividualProfileValues;
         payload = {
           location: individualData.location,
           linkedin_url: individualData.linkedin_url,
           website_url: individualData.website_url,
-          bio: individualData.bio,
+          bio: individualData.bio, // Your Bio
           full_name: individualData.full_name,
           professional_title: individualData.professional_title,
           years_of_experience: individualData.years_of_experience,
@@ -157,6 +145,7 @@ export default function ProfilePage() {
           education_level: individualData.education_level,
           field_of_study: individualData.field_of_study,
           institution: individualData.institution,
+          industry: individualData.industry,
         };
       } else { // company
         const companyData = data as CompanyProfileValues;
@@ -164,7 +153,7 @@ export default function ProfilePage() {
           location: companyData.location,
           linkedin_url: companyData.linkedin_url,
           website_url: companyData.website_url,
-          bio: companyData.bio,
+          bio: companyData.bio, // Company Description
           company_name: companyData.company_name,
           industry: companyData.industry,
           company_size: companyData.company_size,
@@ -173,119 +162,154 @@ export default function ProfilePage() {
         };
       }
 
-      await updateUserProfile(payload, token); // API call
-
-      // If updateUserProfile is successful, then do these:
+      await updateUserProfile(payload, token);
       toast.success("Profile updated successfully!");
-      await refetchUser(); // Refetch user data to update context
+      await refetchUser();
       router.push(`/auth/onboarding/preferences`);
-
-    } catch (error: any) { // This single catch handles errors from payload logic OR updateUserProfile
+    } catch (error: any) {
       toast.error("Failed to update profile: " + (error.data?.message || error.message));
     }
   };
 
   return (
-    <div className="min-h-screen bg-brand-bg-light-gray py-8">
-      <OnboardingStepper />
-      <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100 mb-8">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-black to-gray-800 rounded-2xl shadow-lg mb-4">
-            {finalUserType === 'company' ? ( // Use finalUserType for rendering
-              <BuildingIcon className="w-8 h-8 text-white" />
+    // Adopted AI version's padding
+    <div className="min-h-screen bg-brand-bg-light-gray py-4 sm:py-8 px-4">
+      <OnboardingStepper /> {/* Standard Stepper */}
+      {/* Adopted AI version's padding and relative class, removed mb-8 */}
+      <div className="max-w-3xl mx-auto bg-white p-4 sm:p-6 lg:p-8 rounded-xl shadow-lg border border-gray-100 relative">
+        {/* Skip Buttons from AI version */}
+        <Button
+          className="absolute top-2 left-2 sm:top-4 sm:left-4 border-2 border-primary-navy bg-transparent text-primary-navy hover:bg-primary-navy hover:text-white focus:bg-primary-navy focus:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy rounded-xl font-subheading text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-2"
+          asChild
+        >
+          <Link href="/dashboard">Skip to Explore</Link>
+        </Button>
+        <Button
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 border-2 border-primary-navy bg-transparent text-primary-navy hover:bg-primary-navy hover:text-white focus:bg-primary-navy focus:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-navy rounded-xl font-subheading text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-2"
+          asChild
+        >
+          {/* Navigate to standard preferences, userType from auth context */}
+          <Link href={`/auth/onboarding/preferences`}>Skip</Link>
+        </Button>
+
+        {/* Header section styling from AI version */}
+        <div className="text-center mb-6 sm:mb-8 mt-12 sm:mt-16">
+          <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-black to-gray-800 rounded-2xl shadow-lg mb-3 sm:mb-4">
+            {finalUserType === 'company' ? (
+              <BuildingIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             ) : (
-              <UserIcon className="w-8 h-8 text-white" />
+              <UserIcon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             )}
           </div>
-          <h1 className="text-3xl font-bold text-brand-text-dark mb-3">
-            {finalUserType === 'company' // Use finalUserType for rendering
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-brand-text-dark mb-2 sm:mb-3 px-2">
+            {finalUserType === 'company'
               ? 'Tell us about your company'
               : 'Tell us about yourself'
             }
           </h1>
-          <p className="text-brand-text-medium leading-relaxed">
-            {finalUserType === 'company' // Use finalUserType for rendering
+          <p className="text-sm sm:text-base text-brand-text-medium leading-relaxed px-2">
+            {finalUserType === 'company'
               ? 'Share your company details to help us connect you with the right talent and opportunities.'
-              : 'Share your professional details to help us match you with amazing opportunities and connections.'
+              : 'Share your details to help us connect you with the right opportunities and people.'
             }
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-10">
-          {/* Location Section - Simplified to a single text input for now */}
-          <div className="space-y-5">
-            <div className="flex items-center space-x-2 mb-3">
-              <MapPinIcon className="h-5 w-5 text-black" />
-              <Label htmlFor="location" className="text-base font-semibold text-brand-text-dark">
-                {finalUserType === 'company' // Use finalUserType for rendering
+        {/* Form spacing from AI version */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 sm:space-y-8 lg:space-y-10">
+          {/* Location Section */}
+          <div className="space-y-3 sm:space-y-4 lg:space-y-5">
+            <div className="flex items-center space-x-2 mb-2 sm:mb-3">
+              <MapPinIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+              <Label htmlFor="location" className="text-sm sm:text-base font-semibold text-brand-text-dark">
+                {finalUserType === 'company'
                   ? 'Where is your company headquartered?'
                   : 'Where are you located?'
-                } {/* Optional field, so no red star for now unless schema changes */}
+                } <span className="text-brand-red">*</span> {/* Assuming location becomes required, adjust schema if not */}
               </Label>
+            </div>
+            {/* Location Benefits box from AI version */}
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200">
+              <p className="text-xs sm:text-sm text-gray-700">
+                <strong>💡 Location Benefits:</strong> {finalUserType === 'company'
+                  ? 'Your company location helps us match you with local talent and understand your regional market presence.'
+                  : 'Your location helps us find relevant job opportunities and connect you with companies in your area.'
+                }
+              </p>
             </div>
             <Input
               id="location"
-              placeholder="e.g. San Francisco, CA or Remote"
+              placeholder="e.g. San Francisco, CA or Remote" // Standard placeholder
               {...register("location")}
-              className="bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-black focus:ring-2 focus:ring-black/20 pl-3"
+              // Styling from AI version (general input text/padding)
+              className="bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base"
             />
             {errors.location && <p className="text-red-500 text-xs mt-1">{errors.location.message}</p>}
           </div>
 
-          {/* Bio Section (Common to both) */}
-          <div className="border-t border-brand-border pt-8 space-y-6">
-            <div className="flex items-center space-x-2 mb-6">
-              <UserIcon className="h-5 w-5 text-black" />
-              <h2 className="text-xl font-semibold text-brand-text-dark">
-                {finalUserType === 'company' ? 'Company Description' : 'Your Bio'} {/* Use finalUserType for rendering */}
+          {/* Bio/Company Description Section (Common field: bio) */}
+          {/* Styling adapted from AI version's section structure */}
+          <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+            <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+              <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+              <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">
+                {finalUserType === 'company' ? 'Company Description' : 'Your Bio'}
               </h2>
             </div>
             <div>
-              <Label htmlFor="bio" className="block text-base font-semibold text-brand-text-dark mb-3">
-                 {finalUserType === 'company' ? 'Tell us about your company...' : 'Write a short bio...'} {/* Use finalUserType for rendering */}
+              <Label htmlFor="bio" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                 {finalUserType === 'company' ? 'Tell us about your company...' : 'Write a short bio...'}
+                 {finalUserType === 'company' && <span className="text-brand-red">*</span>} {/* Assuming company description is required */}
               </Label>
+              {/* Helper text from AI version for Company Description */}
+              {finalUserType === 'company' && (
+                <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
+                  Tell us about your company's mission, values, and what makes you unique.
+                </p>
+              )}
               <Textarea
-                id="bio"
-                placeholder={finalUserType === 'company' ? 'Describe your company mission, values, and culture' : 'Share a bit about your professional journey, interests, or what you are looking for'}
+                id="bio" // Used for Company Description or Your Bio
                 {...register("bio")}
-                className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[120px]"
+                placeholder={finalUserType === 'company' ? 'Describe your company...' : 'Share a bit about your professional journey, interests, or what you are looking for'}
+                // Styling from AI version's Textarea
+                className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[100px] sm:min-h-[120px] text-sm sm:text-base"
               />
               {errors.bio && <p className="text-red-500 text-xs mt-1">{errors.bio.message}</p>}
             </div>
           </div>
 
-          {finalUserType === 'company' ? ( // Use finalUserType for rendering
-            // Company Profile Sections
+
+          {finalUserType === 'company' ? (
             <>
               {/* Company Details Section */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <BuildingIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Company Information</h2>
+              <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+                <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+                  <BuildingIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">Company Information</h2>
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div>
-                    <Label htmlFor="company_name" className="block text-base font-semibold text-brand-text-dark mb-3">
+                    <Label htmlFor="company_name" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
                       Company Name <span className="text-brand-red">*</span>
                     </Label>
                     <Input
                       id="company_name"
                       placeholder="Your Company Name"
                       {...register("company_name")}
-                      className="mt-1 bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-black focus:ring-1 focus:ring-black/20 py-3 px-3 text-base h-12"
+                      className="bg-brand-bg-input border-brand-border placeholder-brand-text-light focus:border-black focus:ring-1 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
                     {(errors as any).company_name && <p className="text-red-500 text-xs mt-1">{(errors as any).company_name?.message}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="company_type" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      What type of company are you? {/* Optional based on schema */}
+                    <Label htmlFor="company_type" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      What type of company are you? <span className="text-brand-red">*</span>
                     </Label>
                     <Controller
                       name="company_type"
                       control={control}
                       render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || ""} >
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
                             <SelectValue placeholder="Select company type" />
                           </SelectTrigger>
                           <SelectContent>
@@ -302,15 +326,15 @@ export default function ProfilePage() {
                     {(errors as any).company_type && <p className="text-red-500 text-xs mt-1">{(errors as any).company_type?.message}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="company_size" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Company Size {/* Optional based on schema, prefilled from users table */}
+                    <Label htmlFor="company_size" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Company Size <span className="text-brand-red">*</span>
                     </Label>
                      <Controller
                       name="company_size"
                       control={control}
                       render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || ""} >
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
                             <SelectValue placeholder="Select company size" />
                           </SelectTrigger>
                           <SelectContent>
@@ -330,22 +354,22 @@ export default function ProfilePage() {
               </div>
 
               {/* Industry & Focus Section */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <BriefcaseIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Industry & Focus</h2>
+              <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+                <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+                  <BriefcaseIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">Industry & Focus</h2>
                 </div>
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   <div>
-                    <Label htmlFor="industry" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Primary Industry {/* Optional based on schema, prefilled from users table */}
+                    <Label htmlFor="industry" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Primary Industry <span className="text-brand-red">*</span>
                     </Label>
                     <Controller
                       name="industry"
                       control={control}
                       render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || ""} >
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
                             <SelectValue placeholder="Select your industry" />
                           </SelectTrigger>
                           <SelectContent>
@@ -363,51 +387,53 @@ export default function ProfilePage() {
                     {(errors as any).industry && <p className="text-red-500 text-xs mt-1">{(errors as any).industry?.message}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="tech_stack" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Tech Stack (if applicable)
+                    <Label htmlFor="tech_stack" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Tech Stack/Tools <span className="text-brand-red">*</span>
                     </Label>
-                    <p className="text-sm text-brand-text-medium mb-4">
-                      List the main technologies your company uses. (Comma-separated)
+                    <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
+                      What technologies, tools, and platforms does your company use?
                     </p>
-                    <Input
+                    <Textarea
                       id="tech_stack"
-                      placeholder="e.g., React, Node.js, Python, AWS"
+                      placeholder="React, Node.js, Python, AWS..."
                       {...register("tech_stack")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                     />
                     {(errors as any).tech_stack && <p className="text-red-500 text-xs mt-1">{(errors as any).tech_stack?.message}</p>}
                   </div>
                 </div>
               </div>
 
-              {/* Company Links Section */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <LinkIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Company Presence</h2>
+              {/* Company Links Section (using existing functional fields) */}
+              <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+                <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+                  <LinkIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">Company Links</h2>
                 </div>
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <Label htmlFor="website_url" className="block text-base font-semibold text-brand-text-dark mb-2">
-                      Company Website
+                    <Label htmlFor="website_url" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Website URL
                     </Label>
                     <Input
                       id="website_url"
+                      type="url"
                       placeholder="https://yourcompany.com"
                       {...register("website_url")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
-                    {errors.website_url && <p className="text-red-500 text-xs mt-1">{errors.website_url.message}</p>}
+                     {errors.website_url && <p className="text-red-500 text-xs mt-1">{errors.website_url.message}</p>}
                   </div>
                   <div>
-                    <Label htmlFor="linkedin_url" className="block text-base font-semibold text-brand-text-dark mb-2">
-                      LinkedIn Company Page
+                    <Label htmlFor="linkedin_url" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      LinkedIn Profile
                     </Label>
                     <Input
                       id="linkedin_url"
-                      placeholder="https://linkedin.com/company/yourcompany"
+                      type="url"
+                      placeholder="https://linkedin.com/company/..."
                       {...register("linkedin_url")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
                     {errors.linkedin_url && <p className="text-red-500 text-xs mt-1">{errors.linkedin_url.message}</p>}
                   </div>
@@ -417,86 +443,87 @@ export default function ProfilePage() {
           ) : (
             // Individual Profile Sections
             <>
-              {/* Personal Information Section */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <UserIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Personal Information</h2>
+              {/* Personal Details Section */}
+              <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+                <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+                  <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">Personal Information</h2>
                 </div>
-
-                <div className="space-y-6">
-                  <div> {/* Changed from grid for full_name to be full width */}
-                    <Label htmlFor="full_name" className="block text-base font-semibold text-brand-text-dark mb-3">
+                <div className="space-y-4 sm:space-y-6">
+                  <div>
+                    <Label htmlFor="full_name" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
                       Full Name <span className="text-brand-red">*</span>
                     </Label>
                     <Input
                       id="full_name"
                       placeholder="e.g. John Doe"
                       {...register("full_name")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
                     {(errors as any).full_name && <p className="text-red-500 text-xs mt-1">{(errors as any).full_name?.message}</p>}
                   </div>
-
                   <div>
-                    <Label htmlFor="professional_title" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Professional Title {/* Optional based on schema */}
+                    <Label htmlFor="professional_title" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Professional Title <span className="text-brand-red">*</span>
                     </Label>
+                     <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
+                      What's your current role or the role you're seeking?
+                    </p>
                     <Input
                       id="professional_title"
-                      placeholder="e.g. Senior Software Engineer, Product Designer"
+                      placeholder="Software Developer, Product Manager..."
                       {...register("professional_title")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
                     {(errors as any).professional_title && <p className="text-red-500 text-xs mt-1">{(errors as any).professional_title?.message}</p>}
                   </div>
-
                   <div>
-                    <Label htmlFor="years_of_experience" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Years of Professional Experience {/* Optional based on schema */}
+                    <Label htmlFor="years_of_experience" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Experience Level <span className="text-brand-red">*</span>
                     </Label>
                     <Controller
-                      name="years_of_experience"
-                      control={control}
-                      render={({ field }) => (
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
-                            <SelectValue placeholder="Select your experience level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0-1">🌱 0-1 years (Entry Level)</SelectItem>
-                            <SelectItem value="2-3">📈 2-3 years (Junior)</SelectItem>
-                            <SelectItem value="4-6">💼 4-6 years (Mid-Level)</SelectItem>
-                            <SelectItem value="7-10">🚀 7-10 years (Senior)</SelectItem>
-                            <SelectItem value="10+">⭐ 10+ years (Expert/Lead)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
+                        name="years_of_experience" // This is "experienceLevel" in AI UI, but "years_of_experience" in standard schema
+                        control={control}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                            <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
+                                <SelectValue placeholder="Select your experience level" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {/* Options from AI UI, values mapped to standard where possible or kept if new */}
+                                <SelectItem value="student">🎓 Student/Fresh Graduate</SelectItem>
+                                <SelectItem value="0-1">🌱 Entry Level (0-2 years)</SelectItem> {/* Matches standard "0-1" */}
+                                <SelectItem value="2-3">💼 Mid Level (2-5 years)</SelectItem> {/* Matches standard "2-3" */}
+                                <SelectItem value="4-6">🚀 Senior Level (5-10 years)</SelectItem> {/* Matches standard "4-6" */}
+                                <SelectItem value="7-10">👑 Lead/Manager (10+ years)</SelectItem> {/* Matches standard "7-10" */}
+                                <SelectItem value="10+">🎯 Executive/Director</SelectItem> {/* Matches standard "10+" */}
+                            </SelectContent>
+                            </Select>
+                        )}
                     />
                     {(errors as any).years_of_experience && <p className="text-red-500 text-xs mt-1">{(errors as any).years_of_experience?.message}</p>}
                   </div>
                 </div>
               </div>
 
-              {/* Professional Background Section */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <BriefcaseIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Professional Background</h2>
+              {/* Professional Background (Standard) / Skills & Education (AI) Section */}
+              <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+                <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+                  {/* Icon from AI version */}
+                  <GraduationCapIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">Skills & Background</h2>
                 </div>
-
-                <div className="space-y-6">
-                  {/* Primary Industry for individual - using 'industry' from schema, but can rename if needed */}
+                <div className="space-y-4 sm:space-y-6">
                   <div>
-                    <Label htmlFor="industry" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Primary Industry {/* Optional based on schema */}
+                    <Label htmlFor="industry" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Primary Industry
                     </Label>
                      <Controller
-                      name="industry" // Assuming 'industry' is part of individual schema or added to common
+                      name="industry"
                       control={control}
                       render={({ field }) => (
                         <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
+                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
                             <SelectValue placeholder="Select your primary industry" />
                           </SelectTrigger>
                           <SelectContent>
@@ -515,17 +542,16 @@ export default function ProfilePage() {
                     />
                     {(errors as any).industry && <p className="text-red-500 text-xs mt-1">{(errors as any).industry?.message}</p>}
                   </div>
-
                   <div>
-                    <Label htmlFor="job_function" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Job Function {/* Optional based on schema */}
+                    <Label htmlFor="job_function" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Job Function
                     </Label>
                     <Controller
                       name="job_function"
                       control={control}
                       render={({ field }) => (
                         <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
+                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
                             <SelectValue placeholder="Select your job function" />
                           </SelectTrigger>
                           <SelectContent>
@@ -535,7 +561,7 @@ export default function ProfilePage() {
                             <SelectItem value="marketing">📢 Marketing & Growth</SelectItem>
                             <SelectItem value="sales">💼 Sales & Business Development</SelectItem>
                             <SelectItem value="operations">📋 Operations & Strategy</SelectItem>
-                            <SelectItem value="finance_operations">💰 Finance & Accounting</SelectItem> {/* Renamed value to avoid conflict */}
+                            <SelectItem value="finance_operations">💰 Finance & Accounting</SelectItem>
                             <SelectItem value="hr">👥 Human Resources</SelectItem>
                             <SelectItem value="other_job_function">🔧 Other</SelectItem>
                           </SelectContent>
@@ -544,40 +570,32 @@ export default function ProfilePage() {
                     />
                     {(errors as any).job_function && <p className="text-red-500 text-xs mt-1">{(errors as any).job_function?.message}</p>}
                   </div>
-
                   <div>
-                    <Label htmlFor="key_skills" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Key Skills & Technologies (Comma-separated)
+                    <Label htmlFor="key_skills" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Key Skills <span className="text-brand-red">*</span>
                     </Label>
-                    <Input
+                    <p className="text-xs sm:text-sm text-brand-text-medium mb-3 sm:mb-4">
+                      List your top skills and technologies. (Comma-separated for now, will improve later)
+                    </p>
+                    <Textarea
                       id="key_skills"
-                      placeholder="e.g., JavaScript, React, Python, Data Analysis"
+                      placeholder="JavaScript, React, Python, Project Management..."
                       {...register("key_skills")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 min-h-[80px] sm:min-h-[100px] text-sm sm:text-base"
                     />
                     {(errors as any).key_skills && <p className="text-red-500 text-xs mt-1">{(errors as any).key_skills?.message}</p>}
                   </div>
-                </div>
-              </div>
-
-              {/* Education Section */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <GraduationCapIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Education</h2>
-                </div>
-
-                <div className="space-y-6">
+                  {/* Standard Education Section (Highest Level, Field, Institution) */}
                   <div>
-                    <Label htmlFor="education_level" className="block text-base font-semibold text-brand-text-dark mb-3">
-                      Highest Education Level {/* Optional based on schema */}
+                    <Label htmlFor="education_level" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Highest Education Level
                     </Label>
                     <Controller
                       name="education_level"
                       control={control}
                       render={({ field }) => (
                         <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12">
+                          <SelectTrigger className="w-full bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-11 sm:h-12 text-sm sm:text-base">
                             <SelectValue placeholder="Select your education level" />
                           </SelectTrigger>
                           <SelectContent>
@@ -595,79 +613,139 @@ export default function ProfilePage() {
                     />
                     {(errors as any).education_level && <p className="text-red-500 text-xs mt-1">{(errors as any).education_level?.message}</p>}
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="field_of_study" className="block text-base font-semibold text-brand-text-dark mb-3">
+                      <Label htmlFor="field_of_study" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
                         Field of Study
                       </Label>
                       <Input
                         id="field_of_study"
                         placeholder="e.g. Computer Science"
                         {...register("field_of_study")}
-                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                       />
                        {(errors as any).field_of_study && <p className="text-red-500 text-xs mt-1">{(errors as any).field_of_study?.message}</p>}
                     </div>
                     <div>
-                      <Label htmlFor="institution" className="block text-base font-semibold text-brand-text-dark mb-3">
+                      <Label htmlFor="institution" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
                         Institution
                       </Label>
                       <Input
                         id="institution"
                         placeholder="e.g. Stanford University"
                         {...register("institution")}
-                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                        className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                       />
                       {(errors as any).institution && <p className="text-red-500 text-xs mt-1">{(errors as any).institution?.message}</p>}
                     </div>
                   </div>
+                  {/* New visual-only Education field from AI version */}
+                  <div>
+                    <Label htmlFor="education_ai" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Education (Additional - Visual Only)
+                    </Label>
+                    <Input
+                      id="education_ai" // Different ID to avoid conflict
+                      placeholder="University, Degree, Year (e.g., from AI UI)"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
+                      // Not registered with react-hook-form
+                    />
+                  </div>
                 </div>
               </div>
-              {/* Links section (linkedin_url, website_url) is part of commonProfileSchema and handled by inputs in company section,
-                  but should also be available for individuals. Adding them here explicitly for individual users. */}
-              <div className="border-t border-brand-border pt-8 space-y-6">
-                <div className="flex items-center space-x-2 mb-6">
-                  <LinkIcon className="h-5 w-5 text-black" />
-                  <h2 className="text-xl font-semibold text-brand-text-dark">Online Presence</h2>
+
+              {/* Links Section (combining functional and new visual-only) */}
+              <div className="border-t border-brand-border pt-6 sm:pt-8 space-y-4 sm:space-y-6">
+                <div className="flex items-center space-x-2 mb-4 sm:mb-6">
+                  <LinkIcon className="h-4 w-4 sm:h-5 sm:w-5 text-black" />
+                  <h2 className="text-lg sm:text-xl font-semibold text-brand-text-dark">Professional Links</h2>
                 </div>
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Functional LinkedIn URL */}
                   <div>
-                    <Label htmlFor="linkedin_url_individual" className="block text-base font-semibold text-brand-text-dark mb-2">
+                    <Label htmlFor="linkedin_url" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
                       LinkedIn Profile URL
                     </Label>
                     <Input
-                      id="linkedin_url_individual"
-                      placeholder="https://linkedin.com/in/yourprofile"
+                      id="linkedin_url" // Standard ID
+                      type="url"
+                      placeholder="https://linkedin.com/in/..."
                       {...register("linkedin_url")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
                     {errors.linkedin_url && <p className="text-red-500 text-xs mt-1">{errors.linkedin_url.message}</p>}
                   </div>
+                  {/* Functional Website URL */}
                   <div>
-                    <Label htmlFor="website_url_individual" className="block text-base font-semibold text-brand-text-dark mb-2">
-                      Personal Website/Portfolio
+                    <Label htmlFor="website_url" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                       Personal Website/Portfolio URL
                     </Label>
                     <Input
-                      id="website_url_individual"
+                      id="website_url" // Standard ID
+                      type="url"
                       placeholder="https://yourportfolio.com"
                       {...register("website_url")}
-                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 h-12"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
                     />
                     {errors.website_url && <p className="text-red-500 text-xs mt-1">{errors.website_url.message}</p>}
+                  </div>
+                   {/* New visual-only Portfolio URL (if different from website_url, or just for UI) */}
+                  <div>
+                    <Label htmlFor="portfolio_ai" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Portfolio/Website (Additional - Visual Only)
+                    </Label>
+                    <Input
+                      id="portfolio_ai"
+                      type="url"
+                      placeholder="https://yourportfolio.com (e.g., from AI UI)"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
+                    />
+                  </div>
+                  {/* New visual-only GitHub URL */}
+                  <div>
+                    <Label htmlFor="github_ai" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      GitHub Profile (Visual Only)
+                    </Label>
+                    <Input
+                      id="github_ai"
+                      type="url"
+                      placeholder="https://github.com/... (e.g., from AI UI)"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
+                    />
+                  </div>
+                  {/* New visual-only Resume URL */}
+                  <div>
+                    <Label htmlFor="resume_ai" className="block text-sm sm:text-base font-semibold text-brand-text-dark mb-2 sm:mb-3">
+                      Resume URL (Visual Only)
+                    </Label>
+                    <Input
+                      id="resume_ai"
+                      type="url"
+                      placeholder="https://drive.google.com/... (e.g., from AI UI)"
+                      className="bg-brand-bg-input border-brand-border focus:border-black focus:ring-2 focus:ring-black/20 py-3 sm:py-4 px-3 text-sm sm:text-base h-11 sm:h-12"
+                    />
                   </div>
                 </div>
               </div>
             </>
           )}
 
-          <div className="pt-6">
+          {/* Submit Button Area from AI version */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 sm:pt-8 border-t border-brand-border">
             <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-black hover:bg-gray-900 text-white py-3 font-medium text-base rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+              type="button" // Changed from submit
+              variant="outline"
+              className="flex-1 border-2 border-gray-300 bg-transparent text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 rounded-xl font-medium py-3 sm:py-4 text-sm sm:text-base"
+              asChild
             >
-              {isSubmitting ? "Saving..." : "Save and Continue to Preferences →"}
+              <Link href="/">← Back to Home</Link>
+            </Button>
+            <Button
+              type="submit" // This is the actual submit button
+              disabled={isSubmitting}
+              className="flex-1 bg-black hover:bg-gray-900 text-white font-medium rounded-xl py-3 sm:py-4 text-sm sm:text-base"
+            >
+              {isSubmitting ? "Saving..." : "Continue to Preferences →"}
             </Button>
           </div>
         </form>
